@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (MSYS2 + Qt6, auto-detect qmake6)
+name: Build xcalc for Windows (MSYS2 + Qt6, robust, fixed quoting)
 
 on:
   push:
@@ -34,30 +34,34 @@ jobs:
             if (Test-Path $p) { $found = $p; break }
           }
           if (-not $found) {
-            Write-Host "No msys64 found in common locations. Defaulting to C:\tools\msys64"
+            Write-Host ('No msys64 found in common locations. Defaulting to C:\tools\msys64')
             $found = "C:\tools\msys64"
           }
-          Write-Host ("MSYS2 path: " + $found)
+          Write-Host ('MSYS2 path: ' + $found)
           "msys=$found" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Update MSYS2 and install packages
+      - name: Update MSYS2 and install Qt6 packages (explicit)
         shell: pwsh
         run: |
           $msys = "${{ steps.msys-path.outputs.msys }}"
           $bash = Join-Path $msys "usr\bin\bash.exe"
-          if (-not (Test-Path $bash)) { Write-Host ("ERROR: bash.exe not found at " + $bash); exit 1 }
+          if (-not (Test-Path $bash)) { Write-Host ('ERROR: bash.exe not found at ' + $bash); exit 1 }
+          Write-Host ('Using bash: ' + $bash)
           & $bash -lc "pacman -Syu --noconfirm" || true
           & $bash -lc "pacman -Su --noconfirm" || true
-          & $bash -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-make"
+          & $bash -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-make"
           $mingwBin = Join-Path $msys "mingw64\bin"
           if (Test-Path $mingwBin) {
             "$mingwBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            Write-Host ('Added ' + $mingwBin + ' to PATH')
+          } else {
+            Write-Host ('Warning: ' + $mingwBin + ' not found after pacman install')
           }
 
       - name: List repo root (quick check)
         shell: pwsh
         run: |
-          Write-Host "Repository root listing (top-level):"
+          Write-Host 'Repository root listing (top-level):'
           Get-ChildItem -Path $env:GITHUB_WORKSPACE -Force | Select-Object Name,Mode,Length | Format-Table -AutoSize
 
       - name: Find .pro file recursively
@@ -67,7 +71,7 @@ jobs:
           $repo = $env:GITHUB_WORKSPACE
           $pro = Get-ChildItem -Path $repo -Filter *.pro -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
           if (-not $pro) {
-            Write-Host "ERROR: No .pro file found in repository (searched recursively)."
+            Write-Host 'ERROR: No .pro file found in repository (searched recursively).'
             exit 1
           }
           Write-Host ('Found .pro: ' + $pro.FullName)
@@ -75,60 +79,96 @@ jobs:
           Write-Host ('Relative path: ' + $rel)
           "PRO_PATH=$rel" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Debug qmake and make locations
-        shell: cmd
-        run: |
-          where qmake || where qmake6 || echo qmake not found in PATH
-          where mingw32-make || where make || echo make not found in PATH
-          qmake -v || qmake6 -v || echo qmake -v failed
-
-      - name: Build using mingw64 qmake and mingw32-make (auto-detect qmake6)
+      - name: Debug: show qmake versions and Qt6 folders
         shell: pwsh
         run: |
           $msys = "${{ steps.msys-path.outputs.msys }}"
-          $qmakeCandidates = @(
-            Join-Path $msys "mingw64\bin\qmake.exe",
+          $qmakePaths = @(
             Join-Path $msys "mingw64\bin\qmake6.exe",
-            Join-Path $msys "mingw64\bin\qmake-qt6.exe",
-            "qmake",
+            Join-Path $msys "mingw64\bin\qmake.exe",
             "qmake6",
-            "qmake-qt6"
+            "qmake"
           )
-
-          function Get-QMakeInfo($cmd) {
+          foreach ($p in $qmakePaths) {
             try {
-              $out = & $cmd -v 2>&1
-              return $out -join "`n"
+              $cmd = (Get-Command $p -ErrorAction SilentlyContinue).Source
+              if ($cmd) {
+                Write-Host ('Found qmake candidate: ' + $p + ' -> ' + $cmd)
+                & $cmd -v 2>&1 | ForEach-Object { Write-Host ('  ' + $_) }
+              } else {
+                Write-Host ('qmake candidate not on PATH: ' + $p)
+              }
             } catch {
-              return $null
+              Write-Host ('qmake candidate check failed for: ' + $p)
             }
           }
-
-          $selected = $null
-          $info = $null
-          foreach ($c in $qmakeCandidates) {
-            if (Test-Path $c -PathType Leaf -ErrorAction SilentlyContinue) {
-              $info = Get-QMakeInfo $c
-              if ($info) { $selected = $c; break }
+          $maybeQtDirs = @(
+            Join-Path $msys "mingw64\lib\qt6",
+            Join-Path $msys "mingw64\lib\cmake\Qt6",
+            Join-Path $msys "mingw64\lib\qt6\plugins"
+          )
+          foreach ($d in $maybeQtDirs) {
+            if (Test-Path $d) {
+              Write-Host ('Exists: ' + $d)
+              Get-ChildItem -Path $d -Force -ErrorAction SilentlyContinue | Select-Object Name | ForEach-Object { Write-Host ('  ' + $_.Name) }
             } else {
-              try {
-                $which = (Get-Command $c -ErrorAction SilentlyContinue).Source
-                if ($which) {
-                  $info = Get-QMakeInfo $which
-                  if ($info) { $selected = $which; break }
-                }
-              } catch {}
+              Write-Host ('Not found: ' + $d)
             }
           }
 
+      - name: Build (use qmake6 if available, fallback to qmake)
+        shell: pwsh
+        run: |
+          $msys = "${{ steps.msys-path.outputs.msys }}"
+          $candidates = @(
+            Join-Path $msys "mingw64\bin\qmake6.exe",
+            Join-Path $msys "mingw64\bin\qmake.exe",
+            "qmake6",
+            "qmake"
+          )
+          $selected = $null
+          foreach ($c in $candidates) {
+            try {
+              $cmd = (Get-Command $c -ErrorAction SilentlyContinue).Source
+              if ($cmd) {
+                $out = & $cmd -v 2>&1
+                if ($out -match "Qt version.*6") { $selected = $cmd; break }
+              }
+            } catch {}
+          }
           if (-not $selected) {
-            Write-Host "ERROR: No qmake/qmake6 found. Ensure mingw-w64-x86_64-qt6 is installed."
+            Write-Host 'ERROR: No qmake reporting Qt6 found. See previous debug step. Exiting.'
             exit 1
           }
+          Write-Host ('Using qmake: ' + $selected)
+          Push-Location $env:GITHUB_WORKSPACE
+          $proRel = $env:PRO_PATH
+          if (-not $proRel) { Write-Host 'ERROR: PRO_PATH not set'; exit 1 }
+          Write-Host ('Running qmake on ' + $proRel)
+          & $selected -spec win32-g++ $proRel
+          $make = Join-Path $msys "mingw64\bin\mingw32-make.exe"
+          if (-not (Test-Path $make)) { Write-Host ('ERROR: mingw32-make not found at ' + $make); exit 1 }
+          & $make release
+          Pop-Location
 
-          Write-Host ("Using qmake: " + $selected)
-          Write-Host "qmake -v output:"
-          Write-Host $info
+      - name: Verify built exe
+        shell: cmd
+        run: |
+          if exist release\xcalc.exe (
+            echo Found release\xcalc.exe
+          ) else if exist build\release\xcalc.exe (
+            echo Found build\release\xcalc.exe
+          ) else if exist xcalc.exe (
+            echo Found xcalc.exe in repo root
+          ) else (
+            echo ERROR: Built exe not found. Listing workspace: & dir %GITHUB_WORKSPACE% & exit /b 1
+          )
 
-          if ($info -notmatch "Qt version.*6") {
-            Write-Host "ERROR: The selected qmake does
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcalc-windows-x64
+          path: |
+            release/xcalc.exe
+            build/release/xcalc.exe
+            xcalc.exe
