@@ -16,35 +16,34 @@ jobs:
       - name: Install make
         run: choco install make -y
 
-      # 3. Qt 6.7.0 installieren (mit Outputs!)
-      - name: Install Qt 6.7.0
+      # 3. Qt 6.5.2 installieren (✅ STABILE VERSION + ÄLTERE ACTION)
+      - name: Install Qt 6.5.2
         id: qt
-        uses: jurplel/install-qt-action@v4
+        uses: jurplel/install-qt-action@v2  # ⭐ v2 statt v3 (keine SSL-Probleme!)
         with:
-          version: '6.7.0'
+          version: '6.5.2'  # ⭐ 6.5.2 ist stabiler als 6.7.0
           host: 'windows'
           target: 'desktop'
           arch: 'win64_mingw'
 
-      # 4. Umgebung einrichten (✅ FIX: QT_DIR als Umgebungsvariable für cmd)
+      # 4. Umgebung einrichten
       - name: Set up environment
         run: |
           echo "QT_DIR=${{ steps.qt.outputs.qt-dir }}" >> $GITHUB_ENV
           echo "${{ steps.qt.outputs.qt-dir }}\bin" >> $GITHUB_PATH
         shell: pwsh
 
-      # 5. Debug: Pfade und Dateien prüfen
+      # 5. Debug: Pfade prüfen
       - name: Debug paths
         run: |
           echo Arbeitsverzeichnis: %cd%
           echo QT_DIR=%QT_DIR%
-          echo Pfad: %PATH%
           where qmake6
           where make
           dir
         shell: cmd
 
-      # 6. Kompilieren (✅ FIX: %QT_DIR% für cmd + cd ins Repository)
+      # 6. Kompilieren
       - name: Build
         run: |
           cd %GITHUB_WORKSPACE%
