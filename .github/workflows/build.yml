@@ -25,13 +25,23 @@ jobs:
             mingw-w64-x86_64-qt6-tools
             mingw-w64-x86_64-make
 
-      - name: Show qmake and toolchain (debug)
+      - name: Ensure qmake present and show mingw64 bin (debug)
         shell: bash
+        env:
+          MSYSTEM: MINGW64
         run: |
-          echo "PATH: $PATH"
-          which qmake6 || which qmake || true
+          set -euo pipefail
+          echo "=== /mingw64/bin listing ==="
+          ls -la /mingw64/bin || true
+          echo "=== try locating qmake binaries ==="
+          command -v qmake6 || command -v qmake || true
           qmake6 -v 2>/dev/null || qmake -v 2>/dev/null || true
-          which mingw32-make || which make || true
+          echo "If qmake not found above, attempt explicit pacman install of qmake packages"
+          pacman -Sy --noconfirm mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools || true
+          echo "Post-install /mingw64/bin listing"
+          ls -la /mingw64/bin | grep -i qmake || true
+          command -v qmake6 || command -v qmake || true
+          qmake6 -v 2>/dev/null || qmake -v 2>/dev/null || true
 
       - name: Find .pro and run qmake + make (mingw64)
         shell: bash
@@ -40,27 +50,27 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Convert Windows GITHUB_WORKSPACE to MSYS path reliably
-          repo_win="${GITHUB_WORKSPACE}"
-          # Expect form C:\... ; handle if already unix-like
-          if [[ "$repo_win" =~ ^[A-Za-z]:\\ ]]; then
-            drive="${repo_win:0:1}"
-            rest="${repo_win:2}"
-            # replace backslashes with slashes
-            rest="${rest//\\//}"
-            # lowercase drive letter and build msys path like /c/path/to/repo
-            repo_msys="/${drive,,}/${rest}"
+          # Convert Windows GITHUB_WORKSPACE to MSYS path reliably using cygpath
+          if command -v cygpath >/dev/null 2>&1; then
+            repo_msys="$(cygpath -u "${GITHUB_WORKSPACE}")"
           else
-            # already unix-like path (fallback)
-            repo_msys="$repo_win"
+            # fallback conversion
+            repo_win="${GITHUB_WORKSPACE}"
+            if [[ "$repo_win" =~ ^[A-Za-z]:\\ ]]; then
+              drive="${repo_win:0:1}"
+              rest="${repo_win:2}"
+              rest="${rest//\\//}"
+              repo_msys="/${drive,,}/${rest}"
+            else
+              repo_msys="$repo_win"
+            fi
           fi
 
           echo "MSYS repo path: $repo_msys"
           if [ ! -d "$repo_msys" ]; then
             echo "ERROR: repository path not found: $repo_msys"
-            echo "Listing current working directory:"
-            pwd
-            ls -la
+            echo "PWD:"; pwd
+            echo "Workspace listing:"; ls -la
             exit 1
           fi
 
@@ -83,7 +93,8 @@ jobs:
           elif command -v qmake >/dev/null 2>&1; then
             QMAKE=qmake
           else
-            echo "ERROR: qmake not found"
+            echo "ERROR: qmake not found after installation attempts"
+            echo "Listing /mingw64/bin for debugging:"; ls -la /mingw64/bin | head -n 200
             exit 1
           fi
 
