@@ -1,4 +1,4 @@
-name: Build xcalc for Windows
+name: Build xcalc for Windows (MSVC)
 
 on:
   push:
@@ -7,44 +7,45 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
-      # 1. Code auschecken
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. make installieren
-      - name: Install make
-        run: choco install make -y
+      # MSVC-Toolchain aktivieren
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
-      # 3. Qt installieren
-      - name: Install Qt 6.7.0
+      # Qt für MSVC installieren
+      - name: Install Qt 6.7.0 (MSVC)
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.7.0'
           host: 'windows'
           target: 'desktop'
-          arch: 'win64_mingw'
+          arch: 'win64_msvc'
 
-      # 4. Qt-Umgebung korrekt setzen
-      - name: Set up environment
+      # Debug: Qt-Pfade anzeigen
+      - name: Show Qt installation
         shell: pwsh
         run: |
-          echo "$env:QT_ROOT_DIR\bin" >> $GITHUB_PATH
           echo "Qt installed at: $env:QT_ROOT_DIR"
           Get-ChildItem "$env:QT_ROOT_DIR\bin"
 
-      # 5. Kompilieren
-      - name: Build
+      # Build mit MSVC
+      - name: Build with MSVC
         shell: cmd
         run: |
           call "%QT_ROOT_DIR%\bin\qtenv2.bat"
-          qmake6 xcalc.pro -spec win32-g++
-          mingw32-make release
+          qmake6 xcalc.pro -spec win32-msvc
+          nmake
+          dir .
 
-      # 6. .exe hochladen
+      # Artefakt hochladen
       - name: Upload executable
-        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: xcalc-windows
-          path: release/xcalc.exe
+          name: xcalc-windows-msvc
+          path: xcalc.exe
