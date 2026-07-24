@@ -41,7 +41,7 @@ jobs:
       # 5. Qt 6 installieren (METHODE 3: jurplel mit älterer Version)
       - name: Install Qt 6 via jurplel (Fallback 2)
         if: failure()
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
         with:
           version: '6.4.3'  # ⚠️ 6.4.3 statt 6.5.3 (stabiler!)
           host: 'windows'
@@ -87,7 +87,7 @@ jobs:
       # 8. .exe hochladen
       - name: Upload executable
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: xcalc-windows
           path: release/xcalc.exe
