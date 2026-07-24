@@ -16,15 +16,15 @@ jobs:
         run: choco install make -y
         shell: pwsh
 
-      - name: Setup Qt (with MinGW)
-        uses: qt-actions/setup-qt@v2
+      - name: Setup Qt (jurplel/setup-qt)
+        uses: jurplel/setup-qt@v2
         with:
           version: '6.11.1'
           host: 'windows'
           target: 'windows'
           arch: 'x64'
-          toolchain: 'mingw'
-          components: 'qtbase'
+          toolchain: 'mingw'      # sorgt für MinGW-Kit
+          components: 'qtbase'    # ergänze Module mit Semikolon, z. B. 'qtbase;qtdeclarative'
 
       - name: Ensure Qt MinGW bin in PATH
         run: |
