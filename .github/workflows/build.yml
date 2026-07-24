@@ -37,7 +37,7 @@ jobs:
             Write-Host "No msys64 found in common locations. Defaulting to C:\tools\msys64"
             $found = "C:\tools\msys64"
           }
-          Write-Host "MSYS2 path: $found"
+          Write-Host ("MSYS2 path: " + $found)
           "msys=$found" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Update MSYS2 and install packages
@@ -45,10 +45,7 @@ jobs:
         run: |
           $msys = "${{ steps.msys-path.outputs.msys }}"
           $bash = Join-Path $msys "usr\bin\bash.exe"
-          if (-not (Test-Path $bash)) {
-            Write-Host "ERROR: bash.exe not found at $bash"
-            exit 1
-          }
+          if (-not (Test-Path $bash)) { Write-Host ("ERROR: bash.exe not found at " + $bash); exit 1 }
           & $bash -lc "pacman -Syu --noconfirm" || true
           & $bash -lc "pacman -Su --noconfirm" || true
           & $bash -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-make"
@@ -73,4 +70,53 @@ jobs:
             Write-Host "ERROR: No .pro file found in repository (searched recursively)."
             exit 1
           }
-          Write-Host "Found .pro: $($pro.Full
+          # sichere Ausgabe ohne $() Subexpression
+          Write-Host ('Found .pro: ' + $pro.FullName)
+          $rel = $pro.FullName.Substring($repo.Length).TrimStart('\','/')
+          Write-Host ('Relative path: ' + $rel)
+          "PRO_PATH=$rel" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Debug qmake and make locations
+        shell: cmd
+        run: |
+          where qmake || where qmake6 || echo qmake not found in PATH
+          where mingw32-make || where make || echo make not found in PATH
+          qmake -v || qmake6 -v || echo qmake -v failed
+
+      - name: Build using mingw64 qmake and mingw32-make
+        shell: pwsh
+        run: |
+          $msys = "${{ steps.msys-path.outputs.msys }}"
+          $qmake = Join-Path $msys "mingw64\bin\qmake.exe"
+          $make = Join-Path $msys "mingw64\bin\mingw32-make.exe"
+          if (-not (Test-Path $qmake)) { Write-Host ("ERROR: qmake.exe not found at " + $qmake); exit 1 }
+          if (-not (Test-Path $make)) { Write-Host ("ERROR: mingw32-make.exe not found at " + $make); exit 1 }
+          Push-Location $env:GITHUB_WORKSPACE
+          $proRel = $env:PRO_PATH
+          if (-not $proRel) { Write-Host "ERROR: PRO_PATH not set"; exit 1 }
+          Write-Host ('Running qmake on ' + $proRel)
+          & $qmake -spec win32-g++ $proRel
+          & $make release
+          Pop-Location
+
+      - name: Verify built exe
+        shell: cmd
+        run: |
+          if exist release\xcalc.exe (
+            echo Found release\xcalc.exe
+          ) else if exist build\release\xcalc.exe (
+            echo Found build\release\xcalc.exe
+          ) else if exist xcalc.exe (
+            echo Found xcalc.exe in repo root
+          ) else (
+            echo ERROR: Built exe not found. Listing workspace: & dir %GITHUB_WORKSPACE% & exit /b 1
+          )
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcalc-windows-x64
+          path: |
+            release/xcalc.exe
+            build/release/xcalc.exe
+            xcalc.exe
