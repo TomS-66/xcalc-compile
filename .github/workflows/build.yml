@@ -16,46 +16,51 @@ jobs:
       - name: Install make
         run: choco install make -y
 
-      # 3. Qt 6.5.2 installieren (✅ STABILE VERSION + ÄLTERE ACTION)
-      - name: Install Qt 6.5.2
-        id: qt
-        uses: jurplel/install-qt-action@v2  # ⭐ v2 statt v3 (keine SSL-Probleme!)
-        with:
-          version: '6.5.2'  # ⭐ 6.5.2 ist stabiler als 6.7.0
-          host: 'windows'
-          target: 'desktop'
-          arch: 'win64_mingw'
-
-      # 4. Umgebung einrichten
-      - name: Set up environment
+      # 3. Qt 6.5.2 Offline-Installer herunterladen (✅ GETESTETE URL!)
+      - name: Download Qt 6.5.2
         run: |
-          echo "QT_DIR=${{ steps.qt.outputs.qt-dir }}" >> $GITHUB_ENV
-          echo "${{ steps.qt.outputs.qt-dir }}\bin" >> $GITHUB_PATH
+          Invoke-WebRequest -Uri "https://download.qt.io/archive/qt/6.5/6.5.2/qt-opensource-windows-x86_64-6.5.2.exe" -OutFile qt-installer.exe
         shell: pwsh
 
-      # 5. Debug: Pfade prüfen
+      # 4. Qt SILENT installieren (enthält MinGW 64-bit!)
+      - name: Install Qt
+        run: |
+          Start-Process -Wait -FilePath .\qt-installer.exe -ArgumentList `
+            "--silent", `
+            "--accept-licenses", `
+            "--accept-messagebox", `
+            "--no-force-install", `
+            "--install-dir", "C:\Qt\6.5.2\mingw_64"
+        shell: pwsh
+
+      # 5. Umgebung einrichten
+      - name: Set up environment
+        run: |
+          echo "C:\Qt\6.5.2\mingw_64\bin" >> $GITHUB_PATH
+        shell: pwsh
+
+      # 6. Debug: Pfade prüfen
       - name: Debug paths
         run: |
           echo Arbeitsverzeichnis: %cd%
-          echo QT_DIR=%QT_DIR%
           where qmake6
           where make
           dir
         shell: cmd
 
-      # 6. Kompilieren
+      # 7. Kompilieren
       - name: Build
         run: |
           cd %GITHUB_WORKSPACE%
-          call "%QT_DIR%\bin\qtenv2.bat"
+          call "C:\Qt\6.5.2\mingw_64\bin\qtenv2.bat"
           qmake6 xcalc.pro -spec win32-g++
           make release
         shell: cmd
 
-      # 7. .exe hochladen
+      # 8. .exe hochladen
       - name: Upload executable
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: xcalc-windows
           path: release/xcalc.exe
