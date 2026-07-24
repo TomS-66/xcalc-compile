@@ -16,33 +16,42 @@ jobs:
       - name: Install make
         run: choco install make -y
 
-      # 3. Qt 6 installieren (via Chocolatey - zuverlässig!)
-      - name: Install Qt 6
-        run: choco install qt6 -y --version=6.4.3
-        shell: cmd
-
-      # 4. Qt-Pfad finden und Umgebung einrichten
-      - name: Set up Qt environment
+      # 3. Qt Online Installer herunterladen
+      - name: Download Qt Online Installer
         run: |
-          for /f "delims=" %%i in ('where qmake6') do set QMAKE_PATH=%%i
-          for %%i in ("%QMAKE_PATH%") do set QT_BIN=%%~dpi
-          echo Using Qt at: %QT_BIN%
-          set PATH=%QT_BIN%;%PATH%
-          call "%QT_BIN%\qtenv2.bat"
-        shell: cmd
+          Invoke-WebRequest -Uri "https://download.qt.io/online/qtsdk/windows_x64/qt-unified-windows-x64-online.exe" -OutFile qt-installer.exe
+        shell: pwsh
 
-      # 5. Kompilieren
+      # 4. Qt 6.5.3 SILENT installieren (MinGW 64-bit)
+      - name: Install Qt 6.5.3
+        run: |
+          Start-Process -Wait -FilePath .\qt-installer.exe -ArgumentList `
+            "--silent", `
+            "--accept-licenses", `
+            "--accept-messagebox", `
+            "--no-force-install", `
+            "--install-dir", "C:\Qt\6.5.3\mingw_64", `
+            "addModule", "Qt", "6.5.3", "mingw_64"
+        shell: pwsh
+
+      # 5. Umgebung einrichten
+      - name: Set up environment
+        run: |
+          echo "C:\Qt\6.5.3\mingw_64\bin" >> $GITHUB_PATH
+        shell: pwsh
+
+      # 6. Kompilieren
       - name: Build
         run: |
+          call "C:\Qt\6.5.3\mingw_64\bin\qtenv2.bat"
           qmake6 xcalc.pro -spec win32-g++
           make release
         shell: cmd
 
-      # 6. .exe hochladen
+      # 7. .exe hochladen
       - name: Upload executable
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: xcalc-windows
           path: release/xcalc.exe
-          
