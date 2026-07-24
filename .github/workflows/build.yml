@@ -16,8 +16,9 @@ jobs:
       - name: Install make
         run: choco install make -y
 
-      # 3. Qt 6.7.0 installieren
+      # 3. Qt 6.7.0 installieren (mit Outputs!)
       - name: Install Qt 6.7.0
+        id: qt
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.7.0'
@@ -25,23 +26,34 @@ jobs:
           target: 'desktop'
           arch: 'win64_mingw'
 
-      # 4. Umgebung einrichten (✅ FIX: Kein doppeltes \mingw_64\ mehr!)
+      # 4. Umgebung einrichten (✅ FIX: QT_DIR als Umgebungsvariable für cmd)
       - name: Set up environment
         run: |
-          echo "$env:QT_ROOT_DIR\bin" >> $GITHUB_PATH  # ⭐ Nur "\bin", nicht "\mingw_64\bin"!
-          echo "Qt installed at: $env:QT_ROOT_DIR"
-          Get-ChildItem "$env:QT_ROOT_DIR\bin"
+          echo "QT_DIR=${{ steps.qt.outputs.qt-dir }}" >> $GITHUB_ENV
+          echo "${{ steps.qt.outputs.qt-dir }}\bin" >> $GITHUB_PATH
         shell: pwsh
 
-      # 5. Kompilieren (✅ FIX: qtenv2.bat aus dem richtigen Pfad)
+      # 5. Debug: Pfade und Dateien prüfen
+      - name: Debug paths
+        run: |
+          echo Arbeitsverzeichnis: %cd%
+          echo QT_DIR=%QT_DIR%
+          echo Pfad: %PATH%
+          where qmake6
+          where make
+          dir
+        shell: cmd
+
+      # 6. Kompilieren (✅ FIX: %QT_DIR% für cmd + cd ins Repository)
       - name: Build
         run: |
-          call "$env:QT_ROOT_DIR\bin\qtenv2.bat"  # ⭐ Nur "\bin", nicht "\mingw_64\bin"!
+          cd %GITHUB_WORKSPACE%
+          call "%QT_DIR%\bin\qtenv2.bat"
           qmake6 xcalc.pro -spec win32-g++
           make release
         shell: cmd
 
-      # 6. .exe hochladen
+      # 7. .exe hochladen
       - name: Upload executable
         if: success()
         uses: actions/upload-artifact@v4
