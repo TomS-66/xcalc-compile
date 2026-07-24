@@ -1,48 +1,3 @@
-name: Build xcalc for Windows (MSYS2 + Qt6, final)
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-
-jobs:
-  build:
-    runs-on: windows-latest
-    steps:
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup MSYS2 (install and update)
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: >
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-qt6
-            mingw-w64-x86_64-qt6-base
-            mingw-w64-x86_64-qt6-tools
-            mingw-w64-x86_64-make
-
-      - name: Ensure qmake present and show mingw64 bin (debug)
-        shell: bash
-        env:
-          MSYSTEM: MINGW64
-        run: |
-          set -euo pipefail
-          echo "=== /mingw64/bin listing ==="
-          ls -la /mingw64/bin || true
-          echo "=== try locating qmake binaries ==="
-          command -v qmake6 || command -v qmake || true
-          qmake6 -v 2>/dev/null || qmake -v 2>/dev/null || true
-          echo "If qmake not found above, attempt explicit pacman install of qmake packages"
-          pacman -Sy --noconfirm mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools || true
-          echo "Post-install /mingw64/bin listing"
-          ls -la /mingw64/bin | grep -i qmake || true
-          command -v qmake6 || command -v qmake || true
-          qmake6 -v 2>/dev/null || qmake -v 2>/dev/null || true
-
       - name: Find .pro and run qmake + make (mingw64)
         shell: bash
         env:
@@ -50,11 +5,10 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Convert Windows GITHUB_WORKSPACE to MSYS path reliably using cygpath
+          # Convert GITHUB_WORKSPACE to MSYS path (prefer cygpath)
           if command -v cygpath >/dev/null 2>&1; then
             repo_msys="$(cygpath -u "${GITHUB_WORKSPACE}")"
           else
-            # fallback conversion
             repo_win="${GITHUB_WORKSPACE}"
             if [[ "$repo_win" =~ ^[A-Za-z]:\\ ]]; then
               drive="${repo_win:0:1}"
@@ -76,6 +30,7 @@ jobs:
 
           cd "$repo_msys"
 
+          # Find .pro file (top-level first, then recursive)
           pro=$(ls *.pro 2>/dev/null | head -n1 || true)
           if [ -z "$pro" ]; then
             pro=$(find . -maxdepth 6 -type f -name '*.pro' | head -n1 || true)
@@ -86,16 +41,31 @@ jobs:
           fi
 
           echo "Found .pro: $pro"
+
+          # Ensure mingw64 toolchain is first in PATH
           export PATH=/mingw64/bin:$PATH
 
+          echo "Listing /mingw64/bin (first 200 entries) for debug:"
+          ls -la /mingw64/bin | head -n 200 || true
+
+          # Ensure qmake exists; if not, try to install the Qt6 qmake packages
           if command -v qmake6 >/dev/null 2>&1; then
             QMAKE=qmake6
           elif command -v qmake >/dev/null 2>&1; then
             QMAKE=qmake
           else
-            echo "ERROR: qmake not found after installation attempts"
-            echo "Listing /mingw64/bin for debugging:"; ls -la /mingw64/bin | head -n 200
-            exit 1
+            echo "qmake not found — attempting to install Qt6 qmake packages via pacman"
+            pacman -Sy --noconfirm mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-qt6-base || true
+            hash -r || true
+            if command -v qmake6 >/dev/null 2>&1; then
+              QMAKE=qmake6
+            elif command -v qmake >/dev/null 2>&1; then
+              QMAKE=qmake
+            else
+              echo "ERROR: qmake still not found after pacman install"
+              echo "Full /mingw64/bin listing for debugging:"; ls -la /mingw64/bin
+              exit 1
+            fi
           fi
 
           echo "Using $QMAKE"
@@ -113,25 +83,3 @@ jobs:
 
           echo "Using $MAKE"
           $MAKE release || { echo "make failed"; exit 1; }
-
-      - name: Verify built exe (Windows)
-        shell: cmd
-        run: |
-          if exist release\xcalc.exe (
-            echo Found release\xcalc.exe
-          ) else if exist build\release\xcalc.exe (
-            echo Found build\release\xcalc.exe
-          ) else if exist xcalc.exe (
-            echo Found xcalc.exe in repo root
-          ) else (
-            echo ERROR: Built exe not found. Listing workspace: & dir %GITHUB_WORKSPACE% & exit /b 1
-          )
-
-      - name: Upload executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: xcalc-windows-x64
-          path: |
-            release/xcalc.exe
-            build/release/xcalc.exe
-            xcalc.exe
