@@ -41,7 +41,7 @@ jobs:
       # 6. .exe hochladen
       - name: Upload executable
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: xcalc-windows
           path: release/xcalc.exe
