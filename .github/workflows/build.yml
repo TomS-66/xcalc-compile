@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (MSYS2 + Qt6, complete)
+name: Build xcalc for Windows (MSYS2 + Qt6, robust full)
 
 on:
   push:
@@ -9,113 +9,111 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
+
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install MSYS2 (choco) and refresh env
+      - name: Install MSYS2 via Chocolatey (if not present) and refresh env
         shell: pwsh
         run: |
+          if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+            Write-Host "Chocolatey not found. Please ensure runner has Chocolatey."
+            exit 1
+          }
           choco install msys2 -y
           refreshenv
 
-      - name: Determine MSYS2 path (robust) and install Qt6 (inside MSYS2)
+      - name: Detect MSYS2 root (robust) and set output
+        id: detect-msys
+        shell: pwsh
+        run: |
+          $candidates = @()
+          if ($env:ChocolateyInstall) {
+            $candidates += Join-Path $env:ChocolateyInstall "msys64"
+            $candidates += Join-Path $env:ChocolateyInstall "lib\msys2\tools\msys2"
+            $candidates += Join-Path $env:ChocolateyInstall "lib\msys2\tools\msys64"
+            $candidates += Join-Path $env:ChocolateyInstall "lib\msys2"
+          }
+          $candidates += "C:\ProgramData\chocolatey\msys64"
+          $candidates += "C:\ProgramData\chocolatey\lib\msys2\tools\msys2"
+          $candidates += "C:\ProgramData\chocolatey\lib\msys2\tools\msys64"
+          $candidates += "C:\Program Files\msys64"
+          $candidates += "C:\tools\msys64"
+          $found = $null
+          foreach ($p in $candidates) {
+            if ($p -and (Test-Path $p)) {
+              # normalize: if path points into lib\...\, try to find msys64 sibling
+              if ($p -match "lib\\msys2" -or $p -match "lib\\msys2\\tools") {
+                $tryRoot = Join-Path (Split-Path $p -Parent -Parent) "msys64"
+                if (Test-Path $tryRoot) { $found = $tryRoot; break }
+              }
+              $found = $p
+              break
+            }
+          }
+          if (-not $found) {
+            # search Chocolatey lib for msys-like folders
+            if ($env:ChocolateyInstall -and (Test-Path (Join-Path $env:ChocolateyInstall 'lib'))) {
+              $libDirs = Get-ChildItem -Path (Join-Path $env:ChocolateyInstall 'lib') -Directory -ErrorAction SilentlyContinue
+              foreach ($d in $libDirs) {
+                $try1 = Join-Path $d.FullName 'tools\msys2'
+                $try2 = Join-Path $d.FullName 'tools\msys64'
+                if (Test-Path $try1) { $found = $try1; break }
+                if (Test-Path $try2) { $found = $try2; break }
+              }
+            }
+          }
+          if (-not $found) {
+            Write-Host "Could not detect msys64 automatically."
+            Write-Host "ChocolateyInstall = $env:ChocolateyInstall"
+            if ($env:ChocolateyInstall -and (Test-Path (Join-Path $env:ChocolateyInstall 'lib'))) {
+              Write-Host "Top-level entries under Chocolatey lib:"
+              Get-ChildItem -Path (Join-Path $env:ChocolateyInstall 'lib') -Directory | ForEach-Object { Write-Host ("  " + $_.FullName) }
+            }
+            Write-Host "Checked common locations:"
+            foreach ($p in @("C:\tools\msys64","C:\Program Files\msys64","C:\ProgramData\chocolatey\msys64")) { Write-Host ("  " + $p + " -> " + (Test-Path $p)) }
+            exit 1
+          }
+          $bash = Join-Path $found "usr\bin\bash.exe"
+          if (-not (Test-Path $bash)) {
+            Write-Host ("Detected msys root: " + $found)
+            Write-Host ("ERROR: bash.exe not found at " + $bash)
+            Write-Host "Contents of detected root:"
+            Get-ChildItem -Path $found -Force | ForEach-Object { Write-Host ("  " + $_.Name) }
+            exit 1
+          }
+          Write-Host ("Using MSYS2 root: " + $found)
+          "msys=$found" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Update MSYS2 and install Qt6 + toolchain (inside MSYS2)
         shell: cmd
         run: |
-          REM Determine MSYS2 root from common locations
-          if defined ChocolateyInstall (
-            set MSYS=%ChocolateyInstall%\msys64
-          ) else if exist "C:\ProgramData\chocolatey\msys64" (
-            set MSYS=C:\ProgramData\chocolatey\msys64
-          ) else if exist "C:\Program Files\msys64" (
-            set MSYS=C:\Program Files\msys64
-          ) else if exist "C:\tools\msys64" (
-            set MSYS=C:\tools\msys64
-          ) else (
-            REM try to find msys under Chocolatey lib
-            if exist "C:\ProgramData\chocolatey\lib" (
-              for /f "delims=" %%D in ('dir /b /ad "C:\ProgramData\chocolatey\lib"') do (
-                if exist "C:\ProgramData\chocolatey\lib\%%D\tools\msys2" (
-                  set MSYS=C:\ProgramData\chocolatey\lib\%%D\tools\msys2
-                  goto :foundmsys
-                )
-                if exist "C:\ProgramData\chocolatey\lib\%%D\tools\msys64" (
-                  set MSYS=C:\ProgramData\chocolatey\lib\%%D\tools\msys64
-                  goto :foundmsys
-                )
-              )
-            )
-            echo ERROR: MSYS2 not found in common locations.
+          set MSYS=%{ steps.detect-msys.outputs.msys }%
+          if "%MSYS%"=="" (
+            echo ERROR: MSYS path not set by previous step.
             exit /b 1
           )
-          :foundmsys
           echo Using MSYS at %MSYS%
           if not exist "%MSYS%\usr\bin\bash.exe" (
-            echo ERROR: MSYS2 bash not found at %MSYS%\usr\bin\bash.exe
-            echo Listing %MSYS% contents for debugging:
+            echo ERROR: bash.exe not found at %MSYS%\usr\bin\bash.exe
             dir "%MSYS%" || echo "(dir failed)"
             exit /b 1
           )
-          REM Run pacman updates and install Qt6 and toolchain inside MSYS2
           "%MSYS%\usr\bin\bash.exe" -lc "pacman -Syu --noconfirm || true; pacman -Su --noconfirm || true; pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-make"
 
       - name: Find .pro and build inside MSYS2 (mingw64)
         shell: cmd
         run: |
-          REM Reuse same MSYS detection logic to ensure consistent path
-          if defined ChocolateyInstall (
-            set MSYS=%ChocolateyInstall%\msys64
-          ) else if exist "C:\ProgramData\chocolatey\msys64" (
-            set MSYS=C:\ProgramData\chocolatey\msys64
-          ) else if exist "C:\Program Files\msys64" (
-            set MSYS=C:\Program Files\msys64
-          ) else if exist "C:\tools\msys64" (
-            set MSYS=C:\tools\msys64
-          ) else (
-            echo ERROR: MSYS2 not found in common locations.
+          set MSYS=%{ steps.detect-msys.outputs.msys }%
+          if "%MSYS%"=="" (
+            echo ERROR: MSYS path not set by previous step.
             exit /b 1
           )
           echo Using MSYS at %MSYS%
-          if not exist "%MSYS%\usr\bin\bash.exe" (
-            echo ERROR: MSYS2 bash not found at %MSYS%\usr\bin\bash.exe
-            exit /b 1
-          )
-          REM Run build inside MSYS2 mingw64 environment; convert Windows path to MSYS path
           "%MSYS%\usr\bin\bash.exe" -lc " \
             repo_win=\"${GITHUB_WORKSPACE}\"; \
             repo_msys=\$(echo \"\$repo_win\" | sed -E 's#^([A-Za-z]):#/\\L\\1#; s#\\\\#/#g'); \
             echo MSYS repo path: \$repo_msys; \
             cd \"\$repo_msys\" || { echo 'ERROR: cannot cd to repo'; exit 1; }; \
             pro=\$(ls *.pro 2>/dev/null | head -n1); \
-            if [ -z \"\$pro\" ]; then pro=\$(find . -maxdepth 6 -type f -name '*.pro' | head -n1); fi; \
-            if [ -z \"\$pro\" ]; then echo 'ERROR: no .pro found'; exit 1; fi; \
-            echo Found pro: \$pro; \
-            export PATH=/mingw64/bin:\$PATH; \
-            if command -v qmake6 >/dev/null 2>&1; then QMAKE=qmake6; elif command -v qmake >/dev/null 2>&1; then QMAKE=qmake; else echo 'ERROR: qmake not found'; exit 1; fi; \
-            echo Using \$QMAKE; \$QMAKE -v; \
-            \$QMAKE -spec win32-g++ \"\$pro\" || { echo 'qmake failed'; exit 1; }; \
-            if command -v mingw32-make >/dev/null 2>&1; then MAKE=mingw32-make; elif command -v make >/dev/null 2>&1; then MAKE=make; else echo 'ERROR: mingw32-make not found'; exit 1; fi; \
-            echo Using \$MAKE; \$MAKE release || { echo 'make failed'; exit 1; }; \
-            echo Build finished; \
-          "
-
-      - name: Verify built exe (Windows)
-        shell: cmd
-        run: |
-          if exist release\xcalc.exe (
-            echo Found release\xcalc.exe
-          ) else if exist build\release\xcalc.exe (
-            echo Found build\release\xcalc.exe
-          ) else if exist xcalc.exe (
-            echo Found xcalc.exe in repo root
-          ) else (
-            echo ERROR: Built exe not found. Listing workspace: & dir %GITHUB_WORKSPACE% & exit /b 1
-          )
-
-      - name: Upload executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: xcalc-windows-x64
-          path: |
-            release/xcalc.exe
-            build/release/xcalc.exe
-            xcalc.exe
+            if [ -z \"\$pro\" ]; then pro=\$(find . -maxdepth 6 -type f -name '*.pro' | head -
