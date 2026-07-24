@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (MSYS2 + Qt6, robust, fixed quoting)
+name: Build xcalc for Windows (MSYS2 + Qt6, robust)
 
 on:
   push:
@@ -114,61 +114,3 @@ jobs:
             } else {
               Write-Host ('Not found: ' + $d)
             }
-          }
-
-      - name: Build (use qmake6 if available, fallback to qmake)
-        shell: pwsh
-        run: |
-          $msys = "${{ steps.msys-path.outputs.msys }}"
-          $candidates = @(
-            Join-Path $msys "mingw64\bin\qmake6.exe",
-            Join-Path $msys "mingw64\bin\qmake.exe",
-            "qmake6",
-            "qmake"
-          )
-          $selected = $null
-          foreach ($c in $candidates) {
-            try {
-              $cmd = (Get-Command $c -ErrorAction SilentlyContinue).Source
-              if ($cmd) {
-                $out = & $cmd -v 2>&1
-                if ($out -match "Qt version.*6") { $selected = $cmd; break }
-              }
-            } catch {}
-          }
-          if (-not $selected) {
-            Write-Host 'ERROR: No qmake reporting Qt6 found. See previous debug step. Exiting.'
-            exit 1
-          }
-          Write-Host ('Using qmake: ' + $selected)
-          Push-Location $env:GITHUB_WORKSPACE
-          $proRel = $env:PRO_PATH
-          if (-not $proRel) { Write-Host 'ERROR: PRO_PATH not set'; exit 1 }
-          Write-Host ('Running qmake on ' + $proRel)
-          & $selected -spec win32-g++ $proRel
-          $make = Join-Path $msys "mingw64\bin\mingw32-make.exe"
-          if (-not (Test-Path $make)) { Write-Host ('ERROR: mingw32-make not found at ' + $make); exit 1 }
-          & $make release
-          Pop-Location
-
-      - name: Verify built exe
-        shell: cmd
-        run: |
-          if exist release\xcalc.exe (
-            echo Found release\xcalc.exe
-          ) else if exist build\release\xcalc.exe (
-            echo Found build\release\xcalc.exe
-          ) else if exist xcalc.exe (
-            echo Found xcalc.exe in repo root
-          ) else (
-            echo ERROR: Built exe not found. Listing workspace: & dir %GITHUB_WORKSPACE% & exit /b 1
-          )
-
-      - name: Upload executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: xcalc-windows-x64
-          path: |
-            release/xcalc.exe
-            build/release/xcalc.exe
-            xcalc.exe
