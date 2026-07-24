@@ -39,18 +39,22 @@ jobs:
           $candidates += "C:\ProgramData\chocolatey\lib\msys2\tools\msys64"
           $candidates += "C:\Program Files\msys64"
           $candidates += "C:\tools\msys64"
+
           $found = $null
           foreach ($p in $candidates) {
             if ($p -and (Test-Path $p)) {
               # normalize: if path points into lib\...\, try to find msys64 sibling
               if ($p -match "lib\\msys2" -or $p -match "lib\\msys2\\tools") {
-                $tryRoot = Join-Path (Split-Path $p -Parent -Parent) "msys64"
+                $parent1 = Split-Path $p -Parent
+                $tryRoot = Split-Path $parent1 -Parent
+                $tryRoot = Join-Path $tryRoot "msys64"
                 if (Test-Path $tryRoot) { $found = $tryRoot; break }
               }
               $found = $p
               break
             }
           }
+
           if (-not $found) {
             # search Chocolatey lib for msys-like folders
             if ($env:ChocolateyInstall -and (Test-Path (Join-Path $env:ChocolateyInstall 'lib'))) {
@@ -63,6 +67,7 @@ jobs:
               }
             }
           }
+
           if (-not $found) {
             Write-Host "Could not detect msys64 automatically."
             Write-Host "ChocolateyInstall = $env:ChocolateyInstall"
@@ -74,6 +79,7 @@ jobs:
             foreach ($p in @("C:\tools\msys64","C:\Program Files\msys64","C:\ProgramData\chocolatey\msys64")) { Write-Host ("  " + $p + " -> " + (Test-Path $p)) }
             exit 1
           }
+
           $bash = Join-Path $found "usr\bin\bash.exe"
           if (-not (Test-Path $bash)) {
             Write-Host ("Detected msys root: " + $found)
@@ -82,13 +88,15 @@ jobs:
             Get-ChildItem -Path $found -Force | ForEach-Object { Write-Host ("  " + $_.Name) }
             exit 1
           }
+
           Write-Host ("Using MSYS2 root: " + $found)
           "msys=$found" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Update MSYS2 and install Qt6 + toolchain (inside MSYS2)
         shell: cmd
+        env:
+          MSYS: ${{ steps.detect-msys.outputs.msys }}
         run: |
-          set MSYS=%{ steps.detect-msys.outputs.msys }%
           if "%MSYS%"=="" (
             echo ERROR: MSYS path not set by previous step.
             exit /b 1
@@ -99,21 +107,4 @@ jobs:
             dir "%MSYS%" || echo "(dir failed)"
             exit /b 1
           )
-          "%MSYS%\usr\bin\bash.exe" -lc "pacman -Syu --noconfirm || true; pacman -Su --noconfirm || true; pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-make"
-
-      - name: Find .pro and build inside MSYS2 (mingw64)
-        shell: cmd
-        run: |
-          set MSYS=%{ steps.detect-msys.outputs.msys }%
-          if "%MSYS%"=="" (
-            echo ERROR: MSYS path not set by previous step.
-            exit /b 1
-          )
-          echo Using MSYS at %MSYS%
-          "%MSYS%\usr\bin\bash.exe" -lc " \
-            repo_win=\"${GITHUB_WORKSPACE}\"; \
-            repo_msys=\$(echo \"\$repo_win\" | sed -E 's#^([A-Za-z]):#/\\L\\1#; s#\\\\#/#g'); \
-            echo MSYS repo path: \$repo_msys; \
-            cd \"\$repo_msys\" || { echo 'ERROR: cannot cd to repo'; exit 1; }; \
-            pro=\$(ls *.pro 2>/dev/null | head -n1); \
-            if [ -z \"\$pro\" ]; then pro=\$(find . -maxdepth 6 -type f -name '*.pro' | head -
+          "%MSYS%\usr\bin\bash.exe
