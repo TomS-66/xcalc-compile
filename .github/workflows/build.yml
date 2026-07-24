@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (MSYS2 + Qt6, robust)
+name: Build xcalc for Windows (MSYS2 + Qt6, simplified)
 
 on:
   push:
@@ -13,104 +13,70 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install MSYS2 and refresh env
+      - name: Install MSYS2 (choco) and refresh env
         shell: pwsh
         run: |
           choco install msys2 -y
           refreshenv
 
-      - name: Determine MSYS2 path
-        id: msys-path
-        shell: pwsh
+      - name: Update MSYS2 and install Qt6 (run inside MSYS2 bash)
+        shell: cmd
         run: |
-          $pathsToCheck = @(
-            "$env:ChocolateyInstall\msys64",
-            "$env:ProgramFiles\msys64",
-            "C:\tools\msys64",
-            "C:\Program Files\msys64"
+          set MSYS=C:\tools\msys64
+          if not exist "%MSYS%\usr\bin\bash.exe" (
+            echo "ERROR: MSYS2 bash not found at %MSYS%\usr\bin\bash.exe"
+            exit /b 1
           )
-          $found = $null
-          foreach ($p in $pathsToCheck) {
-            if (Test-Path $p) { $found = $p; break }
-          }
-          if (-not $found) {
-            Write-Host ('No msys64 found in common locations. Defaulting to C:\tools\msys64')
-            $found = "C:\tools\msys64"
-          }
-          Write-Host ('MSYS2 path: ' + $found)
-          "msys=$found" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "%MSYS%\usr\bin\bash.exe" -lc "pacman -Syu --noconfirm || true; pacman -Su --noconfirm || true; pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-make"
 
-      - name: Update MSYS2 and install Qt6 packages (explicit)
-        shell: pwsh
+      - name: Find first .pro and build (inside MSYS2)
+        shell: cmd
         run: |
-          $msys = "${{ steps.msys-path.outputs.msys }}"
-          $bash = Join-Path $msys "usr\bin\bash.exe"
-          if (-not (Test-Path $bash)) { Write-Host ('ERROR: bash.exe not found at ' + $bash); exit 1 }
-          Write-Host ('Using bash: ' + $bash)
-          & $bash -lc "pacman -Syu --noconfirm" || true
-          & $bash -lc "pacman -Su --noconfirm" || true
-          & $bash -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-make"
-          $mingwBin = Join-Path $msys "mingw64\bin"
-          if (Test-Path $mingwBin) {
-            "$mingwBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-            Write-Host ('Added ' + $mingwBin + ' to PATH')
-          } else {
-            Write-Host ('Warning: ' + $mingwBin + ' not found after pacman install')
-          }
-
-      - name: List repo root (quick check)
-        shell: pwsh
-        run: |
-          Write-Host 'Repository root listing (top-level):'
-          Get-ChildItem -Path $env:GITHUB_WORKSPACE -Force | Select-Object Name,Mode,Length | Format-Table -AutoSize
-
-      - name: Find .pro file recursively
-        id: find-pro
-        shell: pwsh
-        run: |
-          $repo = $env:GITHUB_WORKSPACE
-          $pro = Get-ChildItem -Path $repo -Filter *.pro -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $pro) {
-            Write-Host 'ERROR: No .pro file found in repository (searched recursively).'
-            exit 1
-          }
-          Write-Host ('Found .pro: ' + $pro.FullName)
-          $rel = $pro.FullName.Substring($repo.Length).TrimStart('\','/')
-          Write-Host ('Relative path: ' + $rel)
-          "PRO_PATH=$rel" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Debug: show qmake versions and Qt6 folders
-        shell: pwsh
-        run: |
-          $msys = "${{ steps.msys-path.outputs.msys }}"
-          $qmakePaths = @(
-            Join-Path $msys "mingw64\bin\qmake6.exe",
-            Join-Path $msys "mingw64\bin\qmake.exe",
-            "qmake6",
-            "qmake"
+          set MSYS=C:\tools\msys64
+          if not exist "%MSYS%\usr\bin\bash.exe" (
+            echo "ERROR: MSYS2 bash not found at %MSYS%\usr\bin\bash.exe"
+            exit /b 1
           )
-          foreach ($p in $qmakePaths) {
-            try {
-              $cmd = (Get-Command $p -ErrorAction SilentlyContinue).Source
-              if ($cmd) {
-                Write-Host ('Found qmake candidate: ' + $p + ' -> ' + $cmd)
-                & $cmd -v 2>&1 | ForEach-Object { Write-Host ('  ' + $_) }
-              } else {
-                Write-Host ('qmake candidate not on PATH: ' + $p)
-              }
-            } catch {
-              Write-Host ('qmake candidate check failed for: ' + $p)
-            }
-          }
-          $maybeQtDirs = @(
-            Join-Path $msys "mingw64\lib\qt6",
-            Join-Path $msys "mingw64\lib\cmake\Qt6",
-            Join-Path $msys "mingw64\lib\qt6\plugins"
+          REM convert Windows path to MSYS path and run build inside mingw64 environment
+          "%MSYS%\usr\bin\bash.exe" -lc " \
+            repo_win=\"${GITHUB_WORKSPACE}\"; \
+            # convert C:\path\to\repo -> /c/path/to/repo
+            repo_msys=\$(echo \"\$repo_win\" | sed -E 's#^([A-Za-z]):#/\\L\\1#; s#\\\\#/#g'); \
+            echo \"MSYS repo path: \$repo_msys\"; \
+            cd \"\$repo_msys\" || { echo 'ERROR: cannot cd to repo'; exit 1; }; \
+            pro=\$(ls *.pro 2>/dev/null | head -n1); \
+            if [ -z \"\$pro\" ]; then \
+              pro=\$(find . -maxdepth 4 -type f -name '*.pro' | head -n1); \
+            fi; \
+            if [ -z \"\$pro\" ]; then echo 'ERROR: no .pro found'; exit 1; fi; \
+            echo \"Found pro: \$pro\"; \
+            export PATH=/mingw64/bin:\$PATH; \
+            if command -v qmake6 >/dev/null 2>&1; then QMAKE=qmake6; elif command -v qmake >/dev/null 2>&1; then QMAKE=qmake; else echo 'ERROR: qmake not found'; exit 1; fi; \
+            echo \"Using \$QMAKE -> \$($QMAKE -v)\"; \
+            \$QMAKE -spec win32-g++ \"\$pro\" || { echo 'qmake failed'; exit 1; }; \
+            if command -v mingw32-make >/dev/null 2>&1; then MAKE=mingw32-make; elif command -v make >/dev/null 2>&1; then MAKE=make; else echo 'ERROR: mingw32-make not found'; exit 1; fi; \
+            \$MAKE release || { echo 'make failed'; exit 1; }; \
+            echo 'Build finished'; \
+          "
+
+      - name: Verify built exe (Windows)
+        shell: cmd
+        run: |
+          if exist release\xcalc.exe (
+            echo Found release\xcalc.exe
+          ) else if exist build\release\xcalc.exe (
+            echo Found build\release\xcalc.exe
+          ) else if exist xcalc.exe (
+            echo Found xcalc.exe in repo root
+          ) else (
+            echo ERROR: Built exe not found. Listing workspace: & dir %GITHUB_WORKSPACE% & exit /b 1
           )
-          foreach ($d in $maybeQtDirs) {
-            if (Test-Path $d) {
-              Write-Host ('Exists: ' + $d)
-              Get-ChildItem -Path $d -Force -ErrorAction SilentlyContinue | Select-Object Name | ForEach-Object { Write-Host ('  ' + $_.Name) }
-            } else {
-              Write-Host ('Not found: ' + $d)
-            }
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcalc-windows-x64
+          path: |
+            release/xcalc.exe
+            build/release/xcalc.exe
+            xcalc.exe
