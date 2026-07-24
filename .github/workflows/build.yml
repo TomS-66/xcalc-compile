@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (MinGW ZIP)
+name: Build xcalc for Windows (Qt 5.15.2 MinGW ZIP)
 
 on:
   push:
@@ -12,12 +12,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Qt 6.6.3 MinGW herunterladen
-      - name: Download Qt 6.6.3 MinGW
+      # Qt 5.15.2 MinGW herunterladen
+      - name: Download Qt 5.15.2 MinGW
         shell: pwsh
         run: |
           Invoke-WebRequest `
-            -Uri "https://download.qt.io/official_releases/qt/6.6/6.6.3/qt6.6.3-windows-Mingw_64-bit.zip" `
+            -Uri "https://download.qt.io/official_releases/qt/5.15/5.15.2/qt-opensource-windows-x86_64-5.15.2-mingw81_64.zip" `
             -OutFile "qt.zip"
 
       # Entpacken
@@ -29,15 +29,14 @@ jobs:
       - name: Set up Qt environment
         shell: pwsh
         run: |
-          echo "Qt/bin" >> $env:GITHUB_PATH
-          echo "Qt/bin" >> $env:GITHUB_PATH
-          Get-ChildItem "Qt/bin"
+          echo "Qt/5.15.2/mingw81_64/bin" >> $env:GITHUB_PATH
+          Get-ChildItem "Qt/5.15.2/mingw81_64/bin"
 
       # Build mit MinGW
       - name: Build with MinGW
         shell: cmd
         run: |
-          qmake6 xcalc.pro -spec win32-g++
+          qmake xcalc.pro -spec win32-g++
           mingw32-make release
 
       # Artefakt hochladen
