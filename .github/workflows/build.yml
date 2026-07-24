@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (MSVC)
+name: Build xcalc for Windows (MSVC, ZIP Qt)
 
 on:
   push:
@@ -12,36 +12,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # MSVC-Toolchain aktivieren
+      # MSVC aktivieren
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
 
-      # Qt für MSVC installieren (funktionierende Version!)
-      - name: Install Qt 6.2.4 (MSVC)
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.2.4'
-          host: 'windows'
-          target: 'desktop'
-          arch: 'win64_msvc'
-
-      # Debug: Qt-Pfade anzeigen
-      - name: Show Qt installation
+      # Qt 6.6.3 MSVC herunterladen
+      - name: Download Qt 6.6.3 MSVC
         shell: pwsh
         run: |
-          echo "Qt installed at: $env:QT_ROOT_DIR"
-          Get-ChildItem "$env:QT_ROOT_DIR\bin"
+          Invoke-WebRequest `
+            -Uri "https://download.qt.io/online/qtsdkrepository/windows_x64/desktop/qt6_663/qt.qt6.663.win64_msvc/6.6.3-0-202403190914qtbase-Windows-MSVC2022-Windows-Windows_10-MSVC2022-X86_64.7z" `
+            -OutFile "qtbase.7z"
 
-      # Build mit MSVC
+      # Entpacken
+      - name: Extract Qt
+        run: |
+          7z x qtbase.7z -oQt
+
+      # Build
       - name: Build with MSVC
         shell: cmd
         run: |
-          call "%QT_ROOT_DIR%\bin\qtenv2.bat"
+          call "Qt\bin\qtenv2.bat"
           qmake6 xcalc.pro -spec win32-msvc
           nmake
-          dir .
 
       # Artefakt hochladen
       - name: Upload executable
