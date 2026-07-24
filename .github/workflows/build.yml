@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (MSYS2 + Qt6, robust full)
+name: Build xcalc for Windows (MSYS2 + Qt6, install-runner-safe)
 
 on:
   push:
@@ -13,17 +13,53 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install MSYS2 via Chocolatey (if not present) and refresh env
+      - name: Install MSYS2 via Chocolatey and run installer script if present
         shell: pwsh
         run: |
-          if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
-            Write-Host "Chocolatey not found. Please ensure runner has Chocolatey."
-            exit 1
-          }
+          # Install package via choco (puts files under C:\ProgramData\chocolatey\lib\msys2)
           choco install msys2 -y
-          refreshenv
 
-      - name: Detect MSYS2 root (robust) and set output
+          # Candidate locations for the package tools folder
+          $pkgPaths = @(
+            Join-Path $env:ChocolateyInstall "lib\msys2\tools",
+            "C:\ProgramData\chocolatey\lib\msys2\tools",
+            Join-Path $env:ProgramData "chocolatey\lib\msys2\tools"
+          ) | Where-Object { $_ -and (Test-Path $_) }
+
+          # If an install script exists, run it to perform the actual MSYS2 installation
+          $ranInstaller = $false
+          foreach ($p in $pkgPaths) {
+            $installer = Join-Path $p "install-msys2.ps1"
+            if (Test-Path $installer) {
+              Write-Host "Found Chocolatey msys2 installer script at: $installer"
+              & powershell -NoProfile -ExecutionPolicy Bypass -File $installer
+              $ranInstaller = $true
+              break
+            }
+          }
+
+          # If no installer script was found, try to run any msys2 setup tool in tools folder
+          if (-not $ranInstaller -and $pkgPaths.Count -gt 0) {
+            foreach ($p in $pkgPaths) {
+              $possible = Get-ChildItem -Path $p -Filter "*install*.ps1" -File -ErrorAction SilentlyContinue
+              if ($possible) {
+                foreach ($f in $possible) {
+                  Write-Host "Running fallback installer script: $($f.FullName)"
+                  & powershell -NoProfile -ExecutionPolicy Bypass -File $f.FullName
+                  $ranInstaller = $true
+                  break
+                }
+              }
+              if ($ranInstaller) { break }
+            }
+          }
+
+          if (-not $ranInstaller) {
+            Write-Host "No installer script found in Chocolatey msys2 package. Attempting to run choco again to ensure install."
+            choco install msys2 -y --force
+          }
+
+      - name: Detect MSYS2 root and set output
         id: detect-msys
         shell: pwsh
         run: |
@@ -32,22 +68,19 @@ jobs:
             $candidates += Join-Path $env:ChocolateyInstall "msys64"
             $candidates += Join-Path $env:ChocolateyInstall "lib\msys2\tools\msys2"
             $candidates += Join-Path $env:ChocolateyInstall "lib\msys2\tools\msys64"
-            $candidates += Join-Path $env:ChocolateyInstall "lib\msys2"
           }
           $candidates += "C:\ProgramData\chocolatey\msys64"
           $candidates += "C:\ProgramData\chocolatey\lib\msys2\tools\msys2"
-          $candidates += "C:\ProgramData\chocolatey\lib\msys2\tools\msys64"
           $candidates += "C:\Program Files\msys64"
           $candidates += "C:\tools\msys64"
 
           $found = $null
           foreach ($p in $candidates) {
             if ($p -and (Test-Path $p)) {
-              # normalize: if path points into lib\...\, try to find msys64 sibling
+              # if path points into a package tools folder, try to find sibling msys64
               if ($p -match "lib\\msys2" -or $p -match "lib\\msys2\\tools") {
                 $parent1 = Split-Path $p -Parent
-                $tryRoot = Split-Path $parent1 -Parent
-                $tryRoot = Join-Path $tryRoot "msys64"
+                $tryRoot = Join-Path (Split-Path $parent1 -Parent) "msys64"
                 if (Test-Path $tryRoot) { $found = $tryRoot; break }
               }
               $found = $p
@@ -107,4 +140,4 @@ jobs:
             dir "%MSYS%" || echo "(dir failed)"
             exit /b 1
           )
-          "%MSYS%\usr\bin\bash.exe
+          "%MSYS
