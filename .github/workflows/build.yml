@@ -8,30 +8,28 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3  # ⚠️ V3 statt V4 (Node.js 20 Kompatibilität)
 
       - name: Install Qt 6
-        uses: jurplel/install-qt-action@v4
+        uses: jurplel/install-qt-action@v3
         with:
           version: '6.5.3'
           host: 'windows'
           target: 'desktop'
           arch: 'win64_mingw'
           modules: 'qtbase'
-          # Qt wird in $env:QT_ROOT_DIR installiert (z. B. C:\hostedtoolcache\windows\Qt\6.5.3\mingw_64)
 
       - name: Set up MinGW environment
         run: |
-          echo "QT_ROOT_DIR=$env:QT_ROOT_DIR" >> $GITHUB_ENV
           echo "$env:QT_ROOT_DIR\mingw_64\bin" >> $GITHUB_PATH
 
       - name: Build with qmake
         run: |
-          qmake6 xcalc.pro
+          qmake6 xcalc.pro -spec win32-g++
           make release
 
       - name: Upload executable
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: xcalc-windows
           path: release/xcalc.exe
