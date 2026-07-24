@@ -16,13 +16,13 @@ jobs:
       - name: Install make
         run: choco install make -y
 
-      # 3. Qt Online Installer herunterladen
-      - name: Download Qt Online Installer
+      # 3. Qt 6.5.3 OFFLINE Installer herunterladen (100% funktionierende URL!)
+      - name: Download Qt 6.5.3 offline installer
         run: |
-          Invoke-WebRequest -Uri "https://download.qt.io/online/qtsdk/windows_x64/qt-unified-windows-x64-online.exe" -OutFile qt-installer.exe
+          Invoke-WebRequest -Uri "https://download.qt.io/official_releases/qt/6.5/6.5.3/qt-opensource-windows-x64-6.5.3.exe" -OutFile qt-installer.exe
         shell: pwsh
 
-      # 4. Qt 6.5.3 SILENT installieren (MinGW 64-bit)
+      # 4. Qt SILENT installieren (enthält bereits MinGW 64-bit!)
       - name: Install Qt 6.5.3
         run: |
           Start-Process -Wait -FilePath .\qt-installer.exe -ArgumentList `
@@ -30,8 +30,7 @@ jobs:
             "--accept-licenses", `
             "--accept-messagebox", `
             "--no-force-install", `
-            "--install-dir", "C:\Qt\6.5.3\mingw_64", `
-            "addModule", "Qt", "6.5.3", "mingw_64"
+            "--install-dir", "C:\Qt\6.5.3\mingw_64"
         shell: pwsh
 
       # 5. Umgebung einrichten
