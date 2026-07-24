@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (MSYS2 + Qt6, robust)
+name: Build xcalc for Windows (MSYS2 + Qt6, find .pro automatically)
 
 on:
   push:
@@ -17,10 +17,8 @@ jobs:
         run: |
           choco install msys2 -y
           refreshenv
-          Write-Host "ChocolateyInstall = $env:ChocolateyInstall"
-          Write-Host "ProgramFiles = $env:ProgramFiles"
 
-      - name: Determine MSYS2 path and update
+      - name: Determine MSYS2 path
         id: msys-path
         shell: pwsh
         run: |
@@ -35,11 +33,10 @@ jobs:
             if (Test-Path $p) { $found = $p; break }
           }
           if (-not $found) {
-            Write-Host "No existing msys64 found in common locations. Defaulting to C:\tools\msys64"
+            Write-Host "No msys64 found in common locations. Defaulting to C:\tools\msys64"
             $found = "C:\tools\msys64"
           }
           Write-Host "MSYS2 path: $found"
-          # Use the recommended way to set outputs from GitHub Actions in PowerShell
           "msys=$found" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Update MSYS2 and install packages (mingw64 toolchain + Qt6)
@@ -47,27 +44,42 @@ jobs:
         run: |
           $msys = "${{ steps.msys-path.outputs.msys }}"
           $bash = Join-Path $msys "usr\bin\bash.exe"
-          if (-not (Test-Path $bash)) {
-            Write-Host "ERROR: bash.exe not found at $bash"
-            exit 1
-          }
-          Write-Host "Using bash at: $bash"
+          if (-not (Test-Path $bash)) { Write-Host "ERROR: bash.exe not found at $bash"; exit 1 }
           & $bash -lc "pacman -Syu --noconfirm" || true
           & $bash -lc "pacman -Su --noconfirm" || true
           & $bash -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-make"
           $mingwBin = Join-Path $msys "mingw64\bin"
-          if (Test-Path $mingwBin) {
-            "$mingwBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-            Write-Host "Added $mingwBin to PATH"
-          } else {
-            Write-Host "Warning: $mingwBin not found after pacman install"
-          }
+          if (Test-Path $mingwBin) { "$mingwBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append }
 
-      - name: Debug show qmake and toolchain (Windows)
+      - name: Debug: list repo root (quick check)
+        shell: pwsh
+        run: |
+          Write-Host "Repository root listing:"
+          Get-ChildItem -Path $env:GITHUB_WORKSPACE -Force -Recurse -Depth 1 | Select-Object FullName,Mode,Length | Format-Table -AutoSize
+
+      - name: Find .pro file (recursively) and set PRO_PATH
+        id: find-pro
+        shell: pwsh
+        run: |
+          $repo = $env:GITHUB_WORKSPACE
+          Write-Host "Searching for *.pro under $repo ..."
+          $pro = Get-ChildItem -Path $repo -Filter *.pro -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $pro) {
+            Write-Host "ERROR: No .pro file found in repository (searched recursively)."
+            exit 1
+          }
+          Write-Host "Found .pro: $($pro.FullName)"
+          # Convert to Windows relative path from repo root
+          $rel = $pro.FullName.Substring($repo.Length).TrimStart('\','/')
+          Write-Host "Relative path: $rel"
+          "PRO_PATH=$rel" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Debug: show found PRO_PATH and qmake/make locations
         shell: cmd
         run: |
-          where qmake || where qmake6 || echo qmake not found in PATH
-          where mingw32-make || where make || echo make not found in PATH
+          echo PRO_PATH=%PRO_PATH%
+          where qmake || where qmake6 || echo qmake not in PATH
+          where mingw32-make || where make || echo make not in PATH
           qmake -v || qmake6 -v || echo qmake -v failed
 
       - name: Build using mingw64 qmake and mingw32-make (Windows)
@@ -81,8 +93,10 @@ jobs:
           if (-not (Test-Path $qmake)) { Write-Host "ERROR: qmake.exe not found at $qmake"; exit 1 }
           if (-not (Test-Path $make)) { Write-Host "ERROR: mingw32-make.exe not found at $make"; exit 1 }
           Push-Location $env:GITHUB_WORKSPACE
-          if (-not (Test-Path "xcalc.pro")) { Write-Host "ERROR: xcalc.pro not found in repo root"; exit 1 }
-          & $qmake -spec win32-g++ xcalc.pro
+          $proRel = $env:PRO_PATH
+          if (-not $proRel) { Write-Host "ERROR: PRO_PATH not set"; exit 1 }
+          Write-Host "Running qmake on $proRel"
+          & $qmake -spec win32-g++ $proRel
           & $make release
           Pop-Location
 
