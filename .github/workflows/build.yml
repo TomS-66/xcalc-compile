@@ -9,47 +9,68 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Install Qt (jurplel)
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.5.3'
-          host: 'windows'
-          target: 'desktop'
-          arch: 'win64_mingw'
-          modules: 'qtbase'
-
-      - name: Show workspace and Qt info
+      - name: Install aqtinstall and dependencies
         shell: cmd
         run: |
-          echo --- Environment ---
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade aqtinstall
+
+      - name: List available Qt packages for debugging
+        shell: cmd
+        run: |
+          echo --- aqt list-qt output ---
+          python -m aqt list-qt windows desktop 6.5.3 win64_mingw
+
+      - name: Install Qt via aqt (try module qtbase, fallback to full)
+        shell: cmd
+        run: |
+          echo --- Attempting modular install (qtbase) ---
+          python -m aqt install-qt windows desktop 6.5.3 win64_mingw --outputdir D:\a\qt --modules qtbase --verbose || (
+            echo --- Modular install failed, attempting full install ---
+            python -m aqt install-qt windows desktop 6.5.3 win64_mingw --outputdir D:\a\qt --verbose
+          )
+
+      - name: Show Qt installation and environment (debug)
+        shell: cmd
+        run: |
+          echo --- Qt install root ---
+          if exist D:\a\qt ( dir D:\a\qt ) else ( echo "D:\a\qt not found" )
+          echo --- Search for qtenv2.bat ---
+          where /r D:\a\qt qtenv2.bat || echo "qtenv2.bat not found by where"
+          echo --- Search for qmake ---
+          where /r D:\a\qt qmake6.exe || where /r D:\a\qt qmake.exe || echo "qmake not found in D:\a\qt"
+          echo --- System python ---
           python --version
           where python || echo "python not found"
-          echo --- PATH ---
-          echo %PATH%
-          echo --- Qt folders ---
-          if exist C:\Qt ( dir C:\Qt ) else ( echo "C:\Qt not found" )
-          echo --- where qmake ---
-          where qmake6 || where qmake || echo "qmake not found"
-          qmake6 -v || qmake -v || echo "qmake -v failed"
 
       - name: Build with MinGW
         shell: cmd
         run: |
-          REM Wenn qtenv2 vorhanden ist, laden
-          if exist "C:\Qt\6.5.3\mingw_64\bin\qtenv2.bat" (
-            call "C:\Qt\6.5.3\mingw_64\bin\qtenv2.bat"
+          REM Try to locate qtenv2.bat under the Qt outputdir and call it if found
+          set "QTOP=D:\a\qt"
+          set "QTBAT="
+          for /r "%QTOP%" %%i in (qtenv2.bat) do set "QTBAT=%%i"
+          if defined QTBAT (
+            echo Found qtenv2 at %QTBAT%
+            call "%QTBAT%"
           ) else (
-            echo "qtenv2.bat not found, continuing"
+            echo qtenv2.bat not found, continuing without it
           )
-          REM Erzeuge Makefiles und baue
-          qmake6 xcalc.pro || qmake xcalc.pro
-          mingw32-make release || mingw32-make || make release
-          dir release\
 
-      - name: Upload executable
+          REM Try qmake6 or qmake
+          where qmake6 || where qmake || echo "qmake not found in PATH"
+
+          qmake6 xcalc.pro || qmake xcalc.pro
+          REM Prefer mingw32-make on Windows MinGW setups
+          mingw32-make release || mingw32-make || make release
+          echo --- Release folder contents ---
+          if exist release ( dir release ) else ( echo "release folder not found" )
+
+      - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
           name: xcalc-windows
-          path: release/xcalc.exe
+          path: release/**
