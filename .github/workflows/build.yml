@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (MSVC, ZIP Qt)
+name: Build xcalc for Windows (MinGW ZIP)
 
 on:
   push:
@@ -12,36 +12,37 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # MSVC aktivieren
-      - name: Set up MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-
-      # Qt 6.6.3 MSVC herunterladen
-      - name: Download Qt 6.6.3 MSVC
+      # Qt 6.6.3 MinGW herunterladen
+      - name: Download Qt 6.6.3 MinGW
         shell: pwsh
         run: |
           Invoke-WebRequest `
-            -Uri "https://download.qt.io/online/qtsdkrepository/windows_x64/desktop/qt6_663/qt.qt6.663.win64_msvc/6.6.3-0-202403190914qtbase-Windows-MSVC2022-Windows-Windows_10-MSVC2022-X86_64.7z" `
-            -OutFile "qtbase.7z"
+            -Uri "https://download.qt.io/official_releases/qt/6.6/6.6.3/qt6.6.3-windows-Mingw_64-bit.zip" `
+            -OutFile "qt.zip"
 
       # Entpacken
       - name: Extract Qt
         run: |
-          7z x qtbase.7z -oQt
+          7z x qt.zip -oQt
 
-      # Build
-      - name: Build with MSVC
+      # PATH setzen
+      - name: Set up Qt environment
+        shell: pwsh
+        run: |
+          echo "Qt/bin" >> $env:GITHUB_PATH
+          echo "Qt/bin" >> $env:GITHUB_PATH
+          Get-ChildItem "Qt/bin"
+
+      # Build mit MinGW
+      - name: Build with MinGW
         shell: cmd
         run: |
-          call "Qt\bin\qtenv2.bat"
-          qmake6 xcalc.pro -spec win32-msvc
-          nmake
+          qmake6 xcalc.pro -spec win32-g++
+          mingw32-make release
 
       # Artefakt hochladen
       - name: Upload executable
         uses: actions/upload-artifact@v4
         with:
-          name: xcalc-windows-msvc
-          path: xcalc.exe
+          name: xcalc-windows-mingw
+          path: release/xcalc.exe
