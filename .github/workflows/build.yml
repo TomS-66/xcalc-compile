@@ -11,19 +11,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Qt
-        uses: qt-actions/setup-qt@v2
+      - name: Install Qt (jurplel)
+        uses: jurplel/install-qt-action@v3
         with:
           version: '6.5.3'
-          host: windows
-          arch: win64_mingw
-          modules: qtbase
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_mingw'
+          modules: 'qtbase'
 
-      - name: Debug Qt installation
+      - name: Show workspace and Qt info
         shell: cmd
         run: |
+          echo --- Environment ---
+          python --version
+          where python || echo "python not found"
+          echo --- PATH ---
+          echo %PATH%
           echo --- Qt folders ---
-          dir C:\Qt || echo "C:\Qt not found"
+          if exist C:\Qt ( dir C:\Qt ) else ( echo "C:\Qt not found" )
           echo --- where qmake ---
           where qmake6 || where qmake || echo "qmake not found"
           qmake6 -v || qmake -v || echo "qmake -v failed"
@@ -31,11 +37,11 @@ jobs:
       - name: Build with MinGW
         shell: cmd
         run: |
-          REM Falls qtenv2 vorhanden ist, source it
+          REM Wenn qtenv2 vorhanden ist, laden
           if exist "C:\Qt\6.5.3\mingw_64\bin\qtenv2.bat" (
             call "C:\Qt\6.5.3\mingw_64\bin\qtenv2.bat"
           ) else (
-            echo "qtenv2.bat not found, continuing without it"
+            echo "qtenv2.bat not found, continuing"
           )
           REM Erzeuge Makefiles und baue
           qmake6 xcalc.pro || qmake xcalc.pro
