@@ -1,36 +1,38 @@
-      - name: Find .pro and run qmake + make (mingw64)
+name: Build xcalc for Windows (MSYS2 + Qt6)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2 and install packages
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-qt6
+            mingw-w64-x86_64-qt6-base
+            mingw-w64-x86_64-qt6-tools
+            mingw-w64-x86_64-make
+
+      - name: Build with qmake and make (mingw64)
         shell: bash
         env:
           MSYSTEM: MINGW64
         run: |
           set -euo pipefail
-
-          # Convert GITHUB_WORKSPACE to MSYS path (prefer cygpath)
-          if command -v cygpath >/dev/null 2>&1; then
-            repo_msys="$(cygpath -u "${GITHUB_WORKSPACE}")"
-          else
-            repo_win="${GITHUB_WORKSPACE}"
-            if [[ "$repo_win" =~ ^[A-Za-z]:\\ ]]; then
-              drive="${repo_win:0:1}"
-              rest="${repo_win:2}"
-              rest="${rest//\\//}"
-              repo_msys="/${drive,,}/${rest}"
-            else
-              repo_msys="$repo_win"
-            fi
-          fi
-
+          repo_msys="$(cygpath -u "${GITHUB_WORKSPACE}" 2>/dev/null || echo "${GITHUB_WORKSPACE}" | sed -E 's#^([A-Za-z]):#/\\L\\1#; s#\\\\#/#g')"
           echo "MSYS repo path: $repo_msys"
-          if [ ! -d "$repo_msys" ]; then
-            echo "ERROR: repository path not found: $repo_msys"
-            echo "PWD:"; pwd
-            echo "Workspace listing:"; ls -la
-            exit 1
-          fi
-
           cd "$repo_msys"
-
-          # Find .pro file (top-level first, then recursive)
           pro=$(ls *.pro 2>/dev/null | head -n1 || true)
           if [ -z "$pro" ]; then
             pro=$(find . -maxdepth 6 -type f -name '*.pro' | head -n1 || true)
@@ -39,47 +41,17 @@
             echo "ERROR: no .pro file found"
             exit 1
           fi
-
-          echo "Found .pro: $pro"
-
-          # Ensure mingw64 toolchain is first in PATH
           export PATH=/mingw64/bin:$PATH
+          if command -v qmake6 >/dev/null 2>&1; then QMAKE=qmake6; elif command -v qmake >/dev/null 2>&1; then QMAKE=qmake; else echo "ERROR: qmake not found"; exit 1; fi
+          $QMAKE -spec win32-g++ "$pro"
+          if command -v mingw32-make >/dev/null 2>&1; then MAKE=mingw32-make; elif command -v make >/dev/null 2>&1; then MAKE=make; else echo "ERROR: make not found"; exit 1; fi
+          $MAKE release
 
-          echo "Listing /mingw64/bin (first 200 entries) for debug:"
-          ls -la /mingw64/bin | head -n 200 || true
-
-          # Ensure qmake exists; if not, try to install the Qt6 qmake packages
-          if command -v qmake6 >/dev/null 2>&1; then
-            QMAKE=qmake6
-          elif command -v qmake >/dev/null 2>&1; then
-            QMAKE=qmake
-          else
-            echo "qmake not found — attempting to install Qt6 qmake packages via pacman"
-            pacman -Sy --noconfirm mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-qt6-base || true
-            hash -r || true
-            if command -v qmake6 >/dev/null 2>&1; then
-              QMAKE=qmake6
-            elif command -v qmake >/dev/null 2>&1; then
-              QMAKE=qmake
-            else
-              echo "ERROR: qmake still not found after pacman install"
-              echo "Full /mingw64/bin listing for debugging:"; ls -la /mingw64/bin
-              exit 1
-            fi
-          fi
-
-          echo "Using $QMAKE"
-          $QMAKE -v
-          $QMAKE -spec win32-g++ "$pro" || { echo "qmake failed"; exit 1; }
-
-          if command -v mingw32-make >/dev/null 2>&1; then
-            MAKE=mingw32-make
-          elif command -v make >/dev/null 2>&1; then
-            MAKE=make
-          else
-            echo "ERROR: mingw32-make not found"
-            exit 1
-          fi
-
-          echo "Using $MAKE"
-          $MAKE release || { echo "make failed"; exit 1; }
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcalc-windows-x64
+          path: |
+            release/xcalc.exe
+            build/release/xcalc.exe
+            xcalc.exe
