@@ -39,7 +39,8 @@ jobs:
             $found = "C:\tools\msys64"
           }
           Write-Host "MSYS2 path: $found"
-          echo "::set-output name=msys::$found"
+          # Use the recommended way to set outputs from GitHub Actions in PowerShell
+          "msys=$found" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Update MSYS2 and install packages (mingw64 toolchain + Qt6)
         shell: pwsh
@@ -51,12 +52,9 @@ jobs:
             exit 1
           }
           Write-Host "Using bash at: $bash"
-          # Update pacman DB and core packages (may require two runs)
           & $bash -lc "pacman -Syu --noconfirm" || true
           & $bash -lc "pacman -Su --noconfirm" || true
-          # Install mingw-w64 toolchain and Qt6 packages
           & $bash -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-make"
-          # Expose mingw64 bin to Windows PATH for subsequent steps
           $mingwBin = Join-Path $msys "mingw64\bin"
           if (Test-Path $mingwBin) {
             "$mingwBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
@@ -65,12 +63,12 @@ jobs:
             Write-Host "Warning: $mingwBin not found after pacman install"
           }
 
-      - name: Debug: show installed qmake and toolchain (Windows)
+      - name: Debug show qmake and toolchain (Windows)
         shell: cmd
         run: |
-          where qmake || where qmake6 || echo "qmake not found in PATH"
-          where mingw32-make || where make || echo "make not found in PATH"
-          qmake -v || qmake6 -v || echo "qmake -v failed"
+          where qmake || where qmake6 || echo qmake not found in PATH
+          where mingw32-make || where make || echo make not found in PATH
+          qmake -v || qmake6 -v || echo qmake -v failed
 
       - name: Build using mingw64 qmake and mingw32-make (Windows)
         shell: pwsh
@@ -92,13 +90,13 @@ jobs:
         shell: cmd
         run: |
           if exist release\xcalc.exe (
-            echo "Found release\xcalc.exe"
+            echo Found release\xcalc.exe
           ) else if exist build\release\xcalc.exe (
-            echo "Found build\release\xcalc.exe"
+            echo Found build\release\xcalc.exe
           ) else if exist xcalc.exe (
-            echo "Found xcalc.exe in repo root"
+            echo Found xcalc.exe in repo root
           ) else (
-            echo "ERROR: Built exe not found. Listing workspace:" & dir %GITHUB_WORKSPACE% & exit /b 1
+            echo ERROR: Built exe not found. Listing workspace: & dir %GITHUB_WORKSPACE% & exit /b 1
           )
 
       - name: Upload executable
