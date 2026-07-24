@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (MSYS2 + Qt6, robust)
+name: Build xcalc for Windows (MSYS2 + Qt6, auto-detect qmake6)
 
 on:
   push:
@@ -70,7 +70,6 @@ jobs:
             Write-Host "ERROR: No .pro file found in repository (searched recursively)."
             exit 1
           }
-          # sichere Ausgabe ohne $() Subexpression
           Write-Host ('Found .pro: ' + $pro.FullName)
           $rel = $pro.FullName.Substring($repo.Length).TrimStart('\','/')
           Write-Host ('Relative path: ' + $rel)
@@ -83,40 +82,53 @@ jobs:
           where mingw32-make || where make || echo make not found in PATH
           qmake -v || qmake6 -v || echo qmake -v failed
 
-      - name: Build using mingw64 qmake and mingw32-make
+      - name: Build using mingw64 qmake and mingw32-make (auto-detect qmake6)
         shell: pwsh
         run: |
           $msys = "${{ steps.msys-path.outputs.msys }}"
-          $qmake = Join-Path $msys "mingw64\bin\qmake.exe"
-          $make = Join-Path $msys "mingw64\bin\mingw32-make.exe"
-          if (-not (Test-Path $qmake)) { Write-Host ("ERROR: qmake.exe not found at " + $qmake); exit 1 }
-          if (-not (Test-Path $make)) { Write-Host ("ERROR: mingw32-make.exe not found at " + $make); exit 1 }
-          Push-Location $env:GITHUB_WORKSPACE
-          $proRel = $env:PRO_PATH
-          if (-not $proRel) { Write-Host "ERROR: PRO_PATH not set"; exit 1 }
-          Write-Host ('Running qmake on ' + $proRel)
-          & $qmake -spec win32-g++ $proRel
-          & $make release
-          Pop-Location
-
-      - name: Verify built exe
-        shell: cmd
-        run: |
-          if exist release\xcalc.exe (
-            echo Found release\xcalc.exe
-          ) else if exist build\release\xcalc.exe (
-            echo Found build\release\xcalc.exe
-          ) else if exist xcalc.exe (
-            echo Found xcalc.exe in repo root
-          ) else (
-            echo ERROR: Built exe not found. Listing workspace: & dir %GITHUB_WORKSPACE% & exit /b 1
+          $qmakeCandidates = @(
+            Join-Path $msys "mingw64\bin\qmake.exe",
+            Join-Path $msys "mingw64\bin\qmake6.exe",
+            Join-Path $msys "mingw64\bin\qmake-qt6.exe",
+            "qmake",
+            "qmake6",
+            "qmake-qt6"
           )
 
-      - name: Upload executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: xcalc-windows-x64
-          path: |
-            release/xcalc.exe
-            build/release/xcalc.exe
-            xcalc.exe
+          function Get-QMakeInfo($cmd) {
+            try {
+              $out = & $cmd -v 2>&1
+              return $out -join "`n"
+            } catch {
+              return $null
+            }
+          }
+
+          $selected = $null
+          $info = $null
+          foreach ($c in $qmakeCandidates) {
+            if (Test-Path $c -PathType Leaf -ErrorAction SilentlyContinue) {
+              $info = Get-QMakeInfo $c
+              if ($info) { $selected = $c; break }
+            } else {
+              try {
+                $which = (Get-Command $c -ErrorAction SilentlyContinue).Source
+                if ($which) {
+                  $info = Get-QMakeInfo $which
+                  if ($info) { $selected = $which; break }
+                }
+              } catch {}
+            }
+          }
+
+          if (-not $selected) {
+            Write-Host "ERROR: No qmake/qmake6 found. Ensure mingw-w64-x86_64-qt6 is installed."
+            exit 1
+          }
+
+          Write-Host ("Using qmake: " + $selected)
+          Write-Host "qmake -v output:"
+          Write-Host $info
+
+          if ($info -notmatch "Qt version.*6") {
+            Write-Host "ERROR: The selected qmake does
