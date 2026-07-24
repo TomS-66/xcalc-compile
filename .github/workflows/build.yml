@@ -8,47 +8,86 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      # 1. Code auschecken (V4 ist OK, der Node.js-Hinweis ist nur eine WARNUNG!)
+      # 1. Code auschecken
       - name: Checkout code
-        uses: actions/checkout@v4  # ✅ V4 ist FUNKTIONSFÄHIG, der Hinweis ist nur informativ!
+        uses: actions/checkout@v4  # ✅ V4 ist OK, Warnung ignorieren!
 
-      # 2. make installieren (falls nicht vorhanden)
+      # 2. make installieren
       - name: Install make
         run: choco install make -y
 
-      # 3. Qt 6 installieren
-      - name: Install Qt 6
-        uses: jurplel/install-qt-action@v4
-        id: qt-install
+      # 3. Qt 6 installieren (METHODE 1: Offizieller Qt-Installer)
+      - name: Install Qt 6 via online installer
+        run: |
+          Invoke-WebRequest -Uri "https://download.qt.io/online/qtsdk/windows_x64/qt-unified-windows-x64-4.6.0-online.exe" -OutFile qt-installer.exe
+          Start-Process -Wait -FilePath .\qt-installer.exe -ArgumentList `
+            "--silent", `
+            "--accept-licenses", `
+            "--accept-messagebox", `
+            "--no-force-install", `
+            "--install-dir", "C:\Qt\6.5.3\mingw_64", `
+            "addModule", "Qt.6.5.3", "Qt6.5.3", "MinGW 64-bit"
+        shell: pwsh
+        continue-on-error: true  # Falls Methode 1 scheitert, weiter mit Methode 2
+
+      # 4. Qt 6 installieren (METHODE 2: Chocolatey)
+      - name: Install Qt 6 via Chocolatey (Fallback)
+        if: failure()
+        run: |
+          choco install qt6 -y --version=6.4.3
+          echo "C:\Program Files (x86)\Qt\6.4.3\mingw_64\bin" >> $GITHUB_PATH
+        continue-on-error: true
+
+      # 5. Qt 6 installieren (METHODE 3: jurplel mit älterer Version)
+      - name: Install Qt 6 via jurplel (Fallback 2)
+        if: failure()
+        uses: jurplel/install-qt-action@v3
         with:
-          version: '6.5.3'
+          version: '6.4.3'  # ⚠️ 6.4.3 statt 6.5.3 (stabiler!)
           host: 'windows'
           target: 'desktop'
           arch: 'win64_mingw'
           modules: 'qtbase'
 
-      # 4. Umgebung einrichten (DEBUG: Pfade anzeigen)
+      # 6. Umgebung einrichten (für alle Methoden)
       - name: Set up environment
         run: |
-          echo "Qt installiert unter: $env:QT_ROOT_DIR"
-          echo "$env:QT_ROOT_DIR\mingw_64\bin" >> $GITHUB_PATH
-          echo "--- Pfad-Prüfung ---"
+          # Methode 1: Offizieller Installer
+          if (Test-Path "C:\Qt\6.5.3\mingw_64\bin\qmake6.exe") {
+            echo "C:\Qt\6.5.3\mingw_64\bin" >> $GITHUB_PATH
+          }
+          # Methode 2: Chocolatey
+          elseif (Test-Path "C:\Program Files (x86)\Qt\6.4.3\mingw_64\bin\qmake6.exe") {
+            echo "C:\Program Files (x86)\Qt\6.4.3\mingw_64\bin" >> $GITHUB_PATH
+          }
+          # Methode 3: jurplel
+          else {
+            echo "$env:QT_ROOT_DIR\mingw_64\bin" >> $GITHUB_PATH
+          }
+          echo "--- Qt-Pfad-Prüfung ---"
           where qmake6
           where make
-          dir "$env:QT_ROOT_DIR\mingw_64\bin"
+        shell: pwsh
 
-      # 5. Kompilieren
+      # 7. Kompilieren
       - name: Build with qmake
         run: |
-          call "$env:QT_ROOT_DIR\mingw_64\bin\qtenv2.bat"
+          # Finde den richtigen qtenv2.bat-Pfad
+          if exist "C:\Qt\6.5.3\mingw_64\bin\qtenv2.bat" (
+            call "C:\Qt\6.5.3\mingw_64\bin\qtenv2.bat"
+          ) else if exist "C:\Program Files (x86)\Qt\6.4.3\mingw_64\bin\qtenv2.bat" (
+            call "C:\Program Files (x86)\Qt\6.4.3\mingw_64\bin\qtenv2.bat"
+          ) else (
+            call "$env:QT_ROOT_DIR\mingw_64\bin\qtenv2.bat"
+          )
           qmake6 xcalc.pro -spec win32-g++
           make release
-        shell: cmd  # Wichtig: cmd.exe statt PowerShell
+        shell: cmd
 
-      # 6. .exe hochladen (nur bei Erfolg)
+      # 8. .exe hochladen
       - name: Upload executable
-        if: success()  # ⚠️ Nur hochladen, wenn Build erfolgreich war
-        uses: actions/upload-artifact@v4
+        if: success()
+        uses: actions/upload-artifact@v3
         with:
           name: xcalc-windows
           path: release/xcalc.exe
