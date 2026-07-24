@@ -8,10 +8,18 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3  # ⚠️ V3 statt V4 (Node.js 20 Kompatibilität)
+      # 1. Code auschecken (V4 ist OK, der Node.js-Hinweis ist nur eine WARNUNG!)
+      - name: Checkout code
+        uses: actions/checkout@v4  # ✅ V4 ist FUNKTIONSFÄHIG, der Hinweis ist nur informativ!
 
+      # 2. make installieren (falls nicht vorhanden)
+      - name: Install make
+        run: choco install make -y
+
+      # 3. Qt 6 installieren
       - name: Install Qt 6
         uses: jurplel/install-qt-action@v4
+        id: qt-install
         with:
           version: '6.5.3'
           host: 'windows'
@@ -19,16 +27,27 @@ jobs:
           arch: 'win64_mingw'
           modules: 'qtbase'
 
-      - name: Set up MinGW environment
+      # 4. Umgebung einrichten (DEBUG: Pfade anzeigen)
+      - name: Set up environment
         run: |
+          echo "Qt installiert unter: $env:QT_ROOT_DIR"
           echo "$env:QT_ROOT_DIR\mingw_64\bin" >> $GITHUB_PATH
+          echo "--- Pfad-Prüfung ---"
+          where qmake6
+          where make
+          dir "$env:QT_ROOT_DIR\mingw_64\bin"
 
+      # 5. Kompilieren
       - name: Build with qmake
         run: |
+          call "$env:QT_ROOT_DIR\mingw_64\bin\qtenv2.bat"
           qmake6 xcalc.pro -spec win32-g++
           make release
+        shell: cmd  # Wichtig: cmd.exe statt PowerShell
 
+      # 6. .exe hochladen (nur bei Erfolg)
       - name: Upload executable
+        if: success()  # ⚠️ Nur hochladen, wenn Build erfolgreich war
         uses: actions/upload-artifact@v4
         with:
           name: xcalc-windows
