@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (MSYS2 + Qt6, reliable)
+name: Build xcalc for Windows (MSYS2 + Qt6, final)
 
 on:
   push:
@@ -39,11 +39,33 @@ jobs:
           MSYSTEM: MINGW64
         run: |
           set -euo pipefail
-          # convert GITHUB_WORKSPACE to msys path
+
+          # Convert Windows GITHUB_WORKSPACE to MSYS path reliably
           repo_win="${GITHUB_WORKSPACE}"
-          repo_msys="$(echo "$repo_win" | sed -E 's#^([A-Za-z]):#/\\L\\1#; s#\\\\#/#g')"
+          # Expect form C:\... ; handle if already unix-like
+          if [[ "$repo_win" =~ ^[A-Za-z]:\\ ]]; then
+            drive="${repo_win:0:1}"
+            rest="${repo_win:2}"
+            # replace backslashes with slashes
+            rest="${rest//\\//}"
+            # lowercase drive letter and build msys path like /c/path/to/repo
+            repo_msys="/${drive,,}/${rest}"
+          else
+            # already unix-like path (fallback)
+            repo_msys="$repo_win"
+          fi
+
           echo "MSYS repo path: $repo_msys"
+          if [ ! -d "$repo_msys" ]; then
+            echo "ERROR: repository path not found: $repo_msys"
+            echo "Listing current working directory:"
+            pwd
+            ls -la
+            exit 1
+          fi
+
           cd "$repo_msys"
+
           pro=$(ls *.pro 2>/dev/null | head -n1 || true)
           if [ -z "$pro" ]; then
             pro=$(find . -maxdepth 6 -type f -name '*.pro' | head -n1 || true)
@@ -52,14 +74,34 @@ jobs:
             echo "ERROR: no .pro file found"
             exit 1
           fi
+
           echo "Found .pro: $pro"
           export PATH=/mingw64/bin:$PATH
-          if command -v qmake6 >/dev/null 2>&1; then QMAKE=qmake6; elif command -v qmake >/dev/null 2>&1; then QMAKE=qmake; else echo "ERROR: qmake not found"; exit 1; fi
+
+          if command -v qmake6 >/dev/null 2>&1; then
+            QMAKE=qmake6
+          elif command -v qmake >/dev/null 2>&1; then
+            QMAKE=qmake
+          else
+            echo "ERROR: qmake not found"
+            exit 1
+          fi
+
           echo "Using $QMAKE"
-          $QMAKE -spec win32-g++ "$pro"
-          if command -v mingw32-make >/dev/null 2>&1; then MAKE=mingw32-make; elif command -v make >/dev/null 2>&1; then MAKE=make; else echo "ERROR: mingw32-make not found"; exit 1; fi
+          $QMAKE -v
+          $QMAKE -spec win32-g++ "$pro" || { echo "qmake failed"; exit 1; }
+
+          if command -v mingw32-make >/dev/null 2>&1; then
+            MAKE=mingw32-make
+          elif command -v make >/dev/null 2>&1; then
+            MAKE=make
+          else
+            echo "ERROR: mingw32-make not found"
+            exit 1
+          fi
+
           echo "Using $MAKE"
-          $MAKE release
+          $MAKE release || { echo "make failed"; exit 1; }
 
       - name: Verify built exe (Windows)
         shell: cmd
