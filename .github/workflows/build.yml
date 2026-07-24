@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (Qt 5.15.2 MinGW ZIP)
+name: Build xcalc for Windows
 
 on:
   push:
@@ -7,41 +7,44 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-
     steps:
+      # 1. Code auschecken
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Qt 5.15.2 MinGW herunterladen (funktionierende URL!)
-      - name: Download Qt 5.15.2 MinGW
+      # 2. make installieren
+      - name: Install make
+        run: choco install make -y
+
+      # 3. Qt 6.7.0 installieren
+      - name: Install Qt 6.7.0
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.0'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_mingw'
+
+      # 4. Umgebung einrichten (✅ FIX: Kein doppeltes \mingw_64\ mehr!)
+      - name: Set up environment
+        run: |
+          echo "$env:QT_ROOT_DIR\bin" >> $GITHUB_PATH  # ⭐ Nur "\bin", nicht "\mingw_64\bin"!
+          echo "Qt installed at: $env:QT_ROOT_DIR"
+          Get-ChildItem "$env:QT_ROOT_DIR\bin"
         shell: pwsh
-        run: |
-          Invoke-WebRequest `
-            -Uri "https://download.qt.io/archive/qt/5.15/5.15.2/qt-opensource-windows-x86_64-5.15.2-mingw81_64.zip" `
-            -OutFile "qt.zip"
 
-      # Entpacken
-      - name: Extract Qt
+      # 5. Kompilieren (✅ FIX: qtenv2.bat aus dem richtigen Pfad)
+      - name: Build
         run: |
-          7z x qt.zip -oQt
-
-      # PATH setzen
-      - name: Set up Qt environment
-        shell: pwsh
-        run: |
-          echo "Qt/5.15.2/mingw81_64/bin" >> $env:GITHUB_PATH
-          Get-ChildItem "Qt/5.15.2/mingw81_64/bin"
-
-      # Build mit MinGW
-      - name: Build with MinGW
+          call "$env:QT_ROOT_DIR\bin\qtenv2.bat"  # ⭐ Nur "\bin", nicht "\mingw_64\bin"!
+          qmake6 xcalc.pro -spec win32-g++
+          make release
         shell: cmd
-        run: |
-          qmake xcalc.pro -spec win32-g++
-          mingw32-make release
 
-      # Artefakt hochladen
+      # 6. .exe hochladen
       - name: Upload executable
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: xcalc-windows-mingw
+          name: xcalc-windows
           path: release/xcalc.exe
