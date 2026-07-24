@@ -12,12 +12,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Qt 5.15.2 MinGW herunterladen
+      # Qt 5.15.2 MinGW herunterladen (funktionierende URL!)
       - name: Download Qt 5.15.2 MinGW
         shell: pwsh
         run: |
           Invoke-WebRequest `
-            -Uri "https://download.qt.io/official_releases/qt/5.15/5.15.2/qt-opensource-windows-x86_64-5.15.2-mingw81_64.zip" `
+            -Uri "https://download.qt.io/archive/qt/5.15/5.15.2/qt-opensource-windows-x86_64-5.15.2-mingw81_64.zip" `
             -OutFile "qt.zip"
 
       # Entpacken
