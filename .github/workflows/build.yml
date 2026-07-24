@@ -3,74 +3,35 @@ name: Build xcalc for Windows
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install aqtinstall and dependencies
-        shell: cmd
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.5.3'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_mingw'
+          modules: 'qtbase'
+          # Qt wird in $env:QT_ROOT_DIR installiert (z. B. C:\hostedtoolcache\windows\Qt\6.5.3\mingw_64)
+
+      - name: Set up MinGW environment
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade aqtinstall
+          echo "QT_ROOT_DIR=$env:QT_ROOT_DIR" >> $GITHUB_ENV
+          echo "$env:QT_ROOT_DIR\mingw_64\bin" >> $GITHUB_PATH
 
-      - name: List available Qt packages for debugging
-        shell: cmd
+      - name: Build with qmake
         run: |
-          echo --- aqt list-qt output ---
-          python -m aqt list-qt windows desktop 6.5.3 win64_mingw
+          qmake6 xcalc.pro
+          make release
 
-      - name: Install Qt via aqt (try module qtbase, fallback to full)
-        shell: cmd
-        run: |
-          echo --- Attempting modular install (qtbase) ---
-          python -m aqt install-qt windows desktop 6.5.3 win64_mingw --outputdir D:\a\qt --modules qtbase --verbose || (
-            echo --- Modular install failed, attempting full install ---
-            python -m aqt install-qt windows desktop 6.5.3 win64_mingw --outputdir D:\a\qt --verbose
-          )
-
-      - name: Show Qt installation and environment (debug)
-        shell: cmd
-        run: |
-          echo --- Qt install root ---
-          if exist D:\a\qt ( dir D:\a\qt ) else ( echo "D:\a\qt not found" )
-          echo --- Search for qtenv2.bat ---
-          where /r D:\a\qt qtenv2.bat || echo "qtenv2.bat not found by where"
-          echo --- Search for qmake ---
-          where /r D:\a\qt qmake6.exe || where /r D:\a\qt qmake.exe || echo "qmake not found in D:\a\qt"
-          echo --- System python ---
-          python --version
-          where python || echo "python not found"
-
-      - name: Build with MinGW
-        shell: cmd
-        run: |
-          REM Try to locate qtenv2.bat under the Qt outputdir and call it if found
-          set "QTOP=D:\a\qt"
-          set "QTBAT="
-          for /r "%QTOP%" %%i in (qtenv2.bat) do set "QTBAT=%%i"
-          if defined QTBAT (
-            echo Found qtenv2 at %QTBAT%
-            call "%QTBAT%"
-          ) else (
-            echo qtenv2.bat not found, continuing without it
-          )
-
-          REM Try qmake6 or qmake
-          where qmake6 || where qmake || echo "qmake not found in PATH"
-
-          qmake6 xcalc.pro || qmake xcalc.pro
-          REM Prefer mingw32-make on Windows MinGW setups
-          mingw32-make release || mingw32-make || make release
-          echo --- Release folder contents ---
-          if exist release ( dir release ) else ( echo "release folder not found" )
-
-      - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+      - name: Upload executable
+        uses: actions/upload-artifact@v3
         with:
           name: xcalc-windows
-          path: release/**
+          path: release/xcalc.exe
