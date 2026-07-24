@@ -16,31 +16,30 @@ jobs:
       - name: Install make
         run: choco install make -y
 
-      # 3. Qt 6.7.0 installieren (AKTUELLE STABILE VERSION, Juli 2026)
+      # 3. Qt installieren
       - name: Install Qt 6.7.0
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.7.0'  # ⭐ Neueste stabile Version
+          version: '6.7.0'
           host: 'windows'
           target: 'desktop'
           arch: 'win64_mingw'
-          # ❌ modules: 'qtbase' WEGGELASSEN (verursacht XML-Fehler!)
 
-      # 4. Umgebung einrichten
+      # 4. Qt-Umgebung korrekt setzen
       - name: Set up environment
-        run: |
-          echo "$env:QT_ROOT_DIR\mingw_64\bin" >> $GITHUB_PATH
-          echo "Qt installed at: $env:QT_ROOT_DIR"
-          Get-ChildItem "$env:QT_ROOT_DIR\mingw_64\bin"
         shell: pwsh
+        run: |
+          echo "$env:QT_ROOT_DIR\bin" >> $GITHUB_PATH
+          echo "Qt installed at: $env:QT_ROOT_DIR"
+          Get-ChildItem "$env:QT_ROOT_DIR\bin"
 
       # 5. Kompilieren
       - name: Build
-        run: |
-          call "$env:QT_ROOT_DIR\mingw_64\bin\qtenv2.bat"
-          qmake6 xcalc.pro -spec win32-g++
-          make release
         shell: cmd
+        run: |
+          call "%QT_ROOT_DIR%\bin\qtenv2.bat"
+          qmake6 xcalc.pro -spec win32-g++
+          mingw32-make release
 
       # 6. .exe hochladen
       - name: Upload executable
