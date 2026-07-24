@@ -1,28 +1,18 @@
-name: Build xcalc for Windows (MSYS2 + Qt6, simplified)
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-
-jobs:
-  build:
-    runs-on: windows-latest
-    steps:
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install MSYS2 (choco) and refresh env
-        shell: pwsh
-        run: |
-          choco install msys2 -y
-          refreshenv
-
       - name: Update MSYS2 and install Qt6 (run inside MSYS2 bash)
         shell: cmd
         run: |
-          set MSYS=C:\tools\msys64
+          REM determine msys path from ChocolateyInstall or ProgramFiles or fallback
+          if defined ChocolateyInstall (
+            set MSYS=%ChocolateyInstall%\msys64
+          ) else if exist "C:\Program Files\msys64" (
+            set MSYS=C:\Program Files\msys64
+          ) else if exist "C:\tools\msys64" (
+            set MSYS=C:\tools\msys64
+          ) else (
+            echo "ERROR: MSYS2 not found in common locations. Please check choco install output."
+            exit /b 1
+          )
+          echo Using MSYS at %MSYS%
           if not exist "%MSYS%\usr\bin\bash.exe" (
             echo "ERROR: MSYS2 bash not found at %MSYS%\usr\bin\bash.exe"
             exit /b 1
@@ -32,22 +22,27 @@ jobs:
       - name: Find first .pro and build (inside MSYS2)
         shell: cmd
         run: |
-          set MSYS=C:\tools\msys64
+          if defined ChocolateyInstall (
+            set MSYS=%ChocolateyInstall%\msys64
+          ) else if exist "C:\Program Files\msys64" (
+            set MSYS=C:\Program Files\msys64
+          ) else if exist "C:\tools\msys64" (
+            set MSYS=C:\tools\msys64
+          ) else (
+            echo "ERROR: MSYS2 not found in common locations. Please check choco install output."
+            exit /b 1
+          )
+          echo Using MSYS at %MSYS%
           if not exist "%MSYS%\usr\bin\bash.exe" (
             echo "ERROR: MSYS2 bash not found at %MSYS%\usr\bin\bash.exe"
             exit /b 1
           )
-          REM convert Windows path to MSYS path and run build inside mingw64 environment
           "%MSYS%\usr\bin\bash.exe" -lc " \
             repo_win=\"${GITHUB_WORKSPACE}\"; \
-            # convert C:\path\to\repo -> /c/path/to/repo
             repo_msys=\$(echo \"\$repo_win\" | sed -E 's#^([A-Za-z]):#/\\L\\1#; s#\\\\#/#g'); \
-            echo \"MSYS repo path: \$repo_msys\"; \
             cd \"\$repo_msys\" || { echo 'ERROR: cannot cd to repo'; exit 1; }; \
             pro=\$(ls *.pro 2>/dev/null | head -n1); \
-            if [ -z \"\$pro\" ]; then \
-              pro=\$(find . -maxdepth 4 -type f -name '*.pro' | head -n1); \
-            fi; \
+            if [ -z \"\$pro\" ]; then pro=\$(find . -maxdepth 4 -type f -name '*.pro' | head -n1); fi; \
             if [ -z \"\$pro\" ]; then echo 'ERROR: no .pro found'; exit 1; fi; \
             echo \"Found pro: \$pro\"; \
             export PATH=/mingw64/bin:\$PATH; \
@@ -58,25 +53,3 @@ jobs:
             \$MAKE release || { echo 'make failed'; exit 1; }; \
             echo 'Build finished'; \
           "
-
-      - name: Verify built exe (Windows)
-        shell: cmd
-        run: |
-          if exist release\xcalc.exe (
-            echo Found release\xcalc.exe
-          ) else if exist build\release\xcalc.exe (
-            echo Found build\release\xcalc.exe
-          ) else if exist xcalc.exe (
-            echo Found xcalc.exe in repo root
-          ) else (
-            echo ERROR: Built exe not found. Listing workspace: & dir %GITHUB_WORKSPACE% & exit /b 1
-          )
-
-      - name: Upload executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: xcalc-windows-x64
-          path: |
-            release/xcalc.exe
-            build/release/xcalc.exe
-            xcalc.exe
