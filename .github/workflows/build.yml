@@ -16,33 +16,33 @@ jobs:
       - name: Install make
         run: choco install make -y
 
-      # 3. Qt 6.5.3 OFFLINE Installer herunterladen (100% funktionierende URL!)
-      - name: Download Qt 6.5.3 offline installer
+      # 3. Qt 6.6.0 OFFLINE Installer herunterladen (AKTUELLE URL!)
+      - name: Download Qt 6.6.0 offline installer
         run: |
-          Invoke-WebRequest -Uri "https://download.qt.io/official_releases/qt/6.5/6.5.3/qt-opensource-windows-x64-6.5.3.exe" -OutFile qt-installer.exe
+          Invoke-WebRequest -Uri "https://download.qt.io/official_releases/qt/6.6/6.6.0/qt-opensource-windows-x64-6.6.0.exe" -OutFile qt-installer.exe
         shell: pwsh
 
-      # 4. Qt SILENT installieren (enthält bereits MinGW 64-bit!)
-      - name: Install Qt 6.5.3
+      # 4. Qt SILENT installieren (enthält MinGW 64-bit!)
+      - name: Install Qt 6.6.0
         run: |
           Start-Process -Wait -FilePath .\qt-installer.exe -ArgumentList `
             "--silent", `
             "--accept-licenses", `
             "--accept-messagebox", `
             "--no-force-install", `
-            "--install-dir", "C:\Qt\6.5.3\mingw_64"
+            "--install-dir", "C:\Qt\6.6.0\mingw_64"
         shell: pwsh
 
       # 5. Umgebung einrichten
       - name: Set up environment
         run: |
-          echo "C:\Qt\6.5.3\mingw_64\bin" >> $GITHUB_PATH
+          echo "C:\Qt\6.6.0\mingw_64\bin" >> $GITHUB_PATH
         shell: pwsh
 
       # 6. Kompilieren
       - name: Build
         run: |
-          call "C:\Qt\6.5.3\mingw_64\bin\qtenv2.bat"
+          call "C:\Qt\6.6.0\mingw_64\bin\qtenv2.bat"
           qmake6 xcalc.pro -spec win32-g++
           make release
         shell: cmd
