@@ -19,10 +19,10 @@ jobs:
           arch: x64
 
       # Qt für MSVC installieren (funktionierende Version!)
-      - name: Install Qt 6.6.3 (MSVC)
+      - name: Install Qt 6.2.4 (MSVC)
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.6.3'
+          version: '6.2.4'
           host: 'windows'
           target: 'desktop'
           arch: 'win64_msvc'
