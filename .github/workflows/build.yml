@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (Qt 6.11.1, MinGW)
+name: Build xcalc for Windows (Qt 6.11.1 via svenstaro/setup-qt)
 
 on:
   push:
@@ -16,15 +16,15 @@ jobs:
         run: choco install make -y
         shell: pwsh
 
-      - name: Setup Qt (jurplel/setup-qt)
-        uses: jurplel/setup-qt@v2
+      - name: Setup Qt (svenstaro/setup-qt)
+        uses: svenstaro/setup-qt@v2
         with:
           version: '6.11.1'
           host: 'windows'
           target: 'windows'
           arch: 'x64'
-          toolchain: 'mingw'      # sorgt für MinGW-Kit
-          components: 'qtbase'    # ergänze Module mit Semikolon, z. B. 'qtbase;qtdeclarative'
+          toolchain: 'mingw'      # request MinGW kit
+          components: 'qtbase'    # add other modules with semicolon if needed
 
       - name: Ensure Qt MinGW bin in PATH
         run: |
