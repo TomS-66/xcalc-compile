@@ -1,5 +1,6 @@
-QT += core gui
-QMAKE_CXXFLAGS += -mfpmath=387
+QT += core6 gui6 widgets  # WICHTIG: "core6 gui6 widgets" statt "core gui"
+CONFIG += c++17
+DEFINES += QT_DEPRECATED_WARNINGS
 TARGET = xcalc
 TEMPLATE = app
 SOURCES += xcalc.cpp \
