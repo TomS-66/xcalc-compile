@@ -1,4 +1,4 @@
-name: Build xcalc for Windows (Qt 6.11.1 via svenstaro/setup-qt)
+name: Build xcalc for Windows (MSYS2 + Qt via pacman)
 
 on:
   push:
@@ -12,35 +12,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install MSYS2 and update
+        shell: pwsh
+        run: |
+          choco install msys2 -y
+          refreshenv
+          $msys = "${env:ProgramFiles}\msys64"
+          echo "MSYS2 installed to $msys"
+          # Update pacman DB and core packages
+          & "$msys\usr\bin\bash.exe" -lc "pacman -Syu --noconfirm" || true
+          & "$msys\usr\bin\bash.exe" -lc "pacman -Su --noconfirm" || true
+
+      - name: Install MinGW-w64 toolchain and Qt (mingw-w64-x86_64-qt6)
+        shell: pwsh
+        run: |
+          $msys = "${env:ProgramFiles}\msys64"
+          & "$msys\usr\bin\bash.exe" -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base"
+          # Add mingw64 bin to PATH for subsequent Windows steps
+          $mingwBin = "$msys\mingw64\bin"
+          "$mingwBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Install make (choco)
         run: choco install make -y
         shell: pwsh
 
-      - name: Setup Qt (svenstaro/setup-qt)
-        uses: svenstaro/setup-qt@v2
-        with:
-          version: '6.11.1'
-          host: 'windows'
-          target: 'windows'
-          arch: 'x64'
-          toolchain: 'mingw'      # request MinGW kit
-          components: 'qtbase'    # add other modules with semicolon if needed
-
-      - name: Ensure Qt MinGW bin in PATH
-        run: |
-          if (Test-Path "$env:QTDIR\mingw_64\bin") {
-            "$env:QTDIR\mingw_64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          } else {
-            "$env:QTDIR\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          }
-        shell: pwsh
-
       - name: "Debug: show Qt and toolchain info"
         run: |
-          echo QTDIR = %QTDIR%
-          where qmake6 || where qmake
+          echo PATH = %PATH%
+          where qmake || where qmake6
           where mingw32-make || where make
-          qmake6 -v || qmake -v
+          qmake -v || qmake6 -v
         shell: cmd
 
       - name: Build with qmake (release)
@@ -49,8 +50,8 @@ jobs:
           if not exist xcalc.pro (
             echo "ERROR: xcalc.pro not found in repository root" & exit /b 1
           )
-          call "%QTDIR%\bin\qtenv2.bat"
-          qmake6 xcalc.pro -spec win32-g++
+          REM If qmake is the mingw one, call it directly
+          qmake -spec win32-g++
           mingw32-make release
         shell: cmd
 
