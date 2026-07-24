@@ -24,7 +24,7 @@ jobs:
           target: 'windows'
           arch: 'x64'
           toolchain: 'mingw'
-          components: 'qtbase' 
+          components: 'qtbase'
 
       - name: Ensure Qt MinGW bin in PATH
         run: |
@@ -35,7 +35,7 @@ jobs:
           }
         shell: pwsh
 
-      - name: Debug: show Qt and toolchain info
+      - name: "Debug: show Qt and toolchain info"
         run: |
           echo QTDIR = %QTDIR%
           where qmake6 || where qmake
@@ -54,18 +54,14 @@ jobs:
           mingw32-make release
         shell: cmd
 
-      - name: Verify built exe and upload
+      - name: Verify built exe
         run: |
-          REM übliche Orte prüfen: release\xcalc.exe oder build\release\xcalc.exe
           if exist release\xcalc.exe (
             echo "Found release\xcalc.exe"
-            echo "release\xcalc.exe" > artifact-path.txt
           ) else if exist build\release\xcalc.exe (
             echo "Found build\release\xcalc.exe"
-            echo "build\release\xcalc.exe" > artifact-path.txt
           ) else if exist xcalc.exe (
             echo "Found xcalc.exe in repo root"
-            echo "xcalc.exe" > artifact-path.txt
           ) else (
             echo "ERROR: Built exe not found. Listing directory:" & dir & exit /b 1
           )
