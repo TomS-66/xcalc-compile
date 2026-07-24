@@ -1,0 +1,29 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=utf-8">
+  <title>Fatal Error</title>
+  <link rel="stylesheet" type="text/css" href="XCALC.css">
+  <script language="javascript" src="version.js"></script>
+</head>
+<body text="#000000" bgcolor="#ffffff">
+<div style="text-align: right;">αβγ<br>
+</div>
+<h2><b>A maths exception has occurred in XCALC</b></h2>
+<p><b><i>Oh dear..!</i></b></p>
+<p>This error happens if you generate an overflow or a singularity that
+is not trapped by the XCALC emergency routine. The author thought that
+such an error should not occur, but it just did. Please
+<script>WriteMail("Exception","contact me")</script>and report what
+happened.</p>
+<p>Your only option now is to click “OK”, and the XCALC instance will
+be closed. Note that the program will not exit in a normal manner, but
+all the settings (such as mode, position etc.) will be updated as
+usual. However, floating point operations are prohibited at this point,
+so your registers will not be saved. Hopefully your operating system
+will clean up any orphaned resources!</p>
+<p><b>
+<script>WriteMail("Exception","Mail bug report")</script></b></p>
+</body>
+</html>

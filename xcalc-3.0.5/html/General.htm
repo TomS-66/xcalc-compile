@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html><head>
+
+
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>General options</title>
+  
+  <link rel="stylesheet" type="text/css" href="XCALC.css"></head><body bgcolor="#ffffff" text="#000000">
+<div style="text-align: right;">αβγ<br>
+</div>
+<h2><b>Configuring XCALC – General page</b></h2>
+<p><b>General Options</b></p>
+<ul>
+  <li><i>Warning sounds (default On):</i></li>
+</ul>
+<blockquote>
+  <p>Whether or not to get a sound when some error is made.</p>
+</blockquote>
+<ul>
+  <li><i>Save registers (default On):</i></li>
+</ul>
+<blockquote>
+  <p>Memory registers, stack contents and unit conversion settings can
+be saved to the file XCALC.dat (in your XCALC directory) between
+sessions.</p>
+</blockquote>
+<ul>
+  <li><i>1000's separator (default On):</i></li>
+</ul>
+<blockquote>
+  <p>Adds a comma between every power of 1000 in the display. This is
+available in the <i>Decimal</i> mode (not <i>Complex</i>), and also
+(somewhat differently) in the <i>Hex</i>, <i>Octal</i> and <i>Binary</i>
+modes.</p>
+</blockquote>
+<ul>
+  <li><i>1/1000'th separator (default Off):</i></li>
+</ul>
+<blockquote>
+  <p>Adds a space between every power of -1000 in the display. This is
+available in the <i>Decimal</i> mode (not <i>Complex</i>).</p>
+</blockquote>
+<ul>
+  <li><i>Clean fractions (default Off):</i></li>
+</ul>
+<blockquote>
+  <p>A <a href="Fractions.htm">fraction</a> can be displayed as “1
+1/2”, or <i>clean</i>, as “3/2”.</p>
+</blockquote>
+<ul>
+  <li><i>Show tooltips (default On):</i></li>
+</ul>
+<blockquote>
+  <p>Tooltips for the main window buttons.</p>
+</blockquote>
+<ul>
+  <li><i>Binary overflow as zero (default Off):</i></li>
+</ul>
+<blockquote>
+  <p>This option should really be named <i>“Treat too large or too
+small numbers as zero when converting to a binary number”</i>. When
+checked, you can always switch to hex/oct/bin modes, and out-of-range
+numbers on the stack are set to zero. This does not apply to memory
+recall operations.</p>
+</blockquote>
+<ul>
+  <li><i>Copy top on stack drop (default On):</i></li>
+</ul>
+<blockquote>
+  <p>When checked, the top-of-stack is copied down following an
+operation see <a href="StackOperation.htm">stack operations</a>.</p>
+</blockquote>
+<ul>
+  <li><i>Inv trig. Funcs as DMS (default Off):</i></li>
+</ul>
+<blockquote>
+  <p>When checked, four trigonometric functions arcsin, arccos, arctan
+and polar will – in Decimal mode with Degrees selected – format the
+angular result as <a href="DMS.htm">degree-minute-second (DMS)</a>.</p>
+</blockquote>
+<ul>
+  <li><i>Message popup (default On):</i></li>
+</ul>
+<blockquote>
+  <p>This only applies when the <i>Logo/error</i> window is not
+displayed (separate settings for the <a href="Normal.htm">normal</a>
+and <a href="Mini.htm">mini</a> modes). When checked, any messages
+(errors or otherwise) will show up in a popup window below the main
+window; when unchecked, messages are not shown.</p>
+</blockquote>
+<ul>
+  <li><i>Allow keyboard edit (default On):</i></li>
+</ul>
+<blockquote>
+  <p>This allows the keyboard to be <a href="KeyboardEdit.htm">edited</a>
+by right-clicking a button. The editing is currently very rudimentary.
+Checking/unchecking this also enables/disables the <i>Keyboard
+rows/cols</i> fields.</p>
+</blockquote>
+<p><b>Display mode</b></p>
+<ul>
+  <li><i>Normal/Mini setting:</i></li>
+</ul>
+<blockquote>
+  <p>You can keep two separate display settings. One is the <a href="Normal.htm">normal</a> XCALC window, the other <a href="Mini.htm">mini</a> mode is intended as a minimum non-obtrusive
+little calculator, although you can customise this mode as you wish.
+You can adjust everything (font/bitmap/size etc.) separately for the
+two, and quickly toggle between them by pressing <b>Alt-M</b>.</p>
+</blockquote>
+<p><b>Clipboard</b></p>
+<ul>
+  <li><i>C style or Basic (default C style):</i></li>
+</ul>
+<blockquote>
+  <p>This decides which of the number formats to be used when exporting
+numbers to the clipboard. With “C” style, hex numbers are prefixed
+“0x”, octal numbers begin with a zero, and binary numbers are prefixed
+with “0b”. Using the “Basic” style, prefixes are “&amp;H”, “&amp;O” and
+“&amp;B”, respectively. You can of course always import a number in any
+format.</p>
+</blockquote>
+<p><b>Keyboard rows/cols</b></p>
+<ul>
+  <li><i>R (default 6), C (default 10):</i></li>
+</ul>
+<blockquote>
+  <p>Number of keyboard keys for XCALC. If these values are altered,
+any keyboard changes you have made will be <b>LOST</b>, and a default
+keyboard based on the number of columns will be inserted instead.
+Reasonable default keyboards are used if the number of columns is 10,
+11 or 12 only - any other values for C will insert an <i>empty</i>
+keyboard that you will have to edit yourself.</p>
+</blockquote>
+<p><b>Stack</b></p>
+<ul>
+  <li><i>Stack size (default 4):</i></li>
+</ul>
+<blockquote>
+  <p>You can specify a stack size between 4 and 64. Note that if you
+specify a higher display value in either the <a href="Normal.htm">normal</a>
+or <a href="Mini.htm">mini</a> page, the higher value is used.</p>
+</blockquote>
+<p><b>Decimal character</b></p>
+<ul>
+  <li>Select the character used as the decimal point. The default
+value(s) is the value of the decimal separator on your system, but you
+may want to change one or more of the values. The three choices are:
+    <ul>
+      <li>Keyboard: select the key on your numeric keypad;</li>
+      <li>Display: this only affects the displayed numbers;</li>
+      <li>Clipboard: for copy/paste operations.</li>
+    </ul>
+  </li>
+  <li>To start entering the imaginary portion of a complex number (see <a href="DecimalComplexKeys.htm">keyboard</a>) you press the key <i>not</i>
+selected as the keyboard decimal key.</li>
+</ul>
+<p><b>See also</b></p>
+<ul>
+  <li><a href="Normal.htm">Normal</a></li>
+  <li><a href="Mini.htm">Mini</a></li>
+  <li><a href="Colours.htm">Colours</a></li>
+</ul>
+</body></html>

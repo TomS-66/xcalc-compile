@@ -1,0 +1,5 @@
+html         { font-family: Tahoma; font-size: 10pt }
+table        { font-family: Tahoma; font-size: 10pt }
+h2           { color: #0000FF }
+.popupLink   { outline: none; text-decoration:none; border-left-width:1px; border-right-width:1px; border-top-width:1px; border-bottom-style:dotted; border-bottom-width:1px }
+.popup       { POSITION: absolute; VISIBILITY: hidden; BACKGROUND-COLOR: #ffffe0; BORDER-LEFT: 1px solid black; BORDER-TOP: 1px solid black; BORDER-BOTTOM: 2px solid black; BORDER-RIGHT: 2px solid black; PADDING: 3px; z-index: 10 }

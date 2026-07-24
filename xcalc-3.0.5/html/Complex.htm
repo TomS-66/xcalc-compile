@@ -1,0 +1,57 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html><head>
+
+
+
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Complex Calculations</title></head><body style="background-color: rgb(255, 255, 255); color: rgb(0, 0, 0);">
+<div style="text-align: right;">αβγ<br>
+</div>
+<br>
+<b>Complex number calculations</b>
+<p>The following explains some of the reasoning behind the operation of
+XCALC. If you are not familiar with complex numbers, go read a maths
+textbook.</p>
+<p>I have chosen a complex-only solution for the floating-point
+routines in XCALC. This means that when you do decimal calculations,
+behind the scene quite a few invisible things happen (like addition of
+imaginary parts of numbers). Normally, this goes without any problems,
+and you might appreciate the solution if you want to know, say, the
+inverse sine of 2. If the imaginary part as the result of any
+calculation becomes non-zero, the mode is automatically set to Complex.
+In the <a href="Accuracy.htm">accuracy</a> section you can see some
+unfortunate effects of this, but it certainly makes the internal
+operation of XCALC a lot tidier!</p>
+<p>Since complex numbers and radian angle measures are inseparable,
+there is no provision for “degrees” in the Complex mode. Euler's
+formulae simply do not make any sense unless radians are used.</p>
+<p><b>Principal values</b></p>
+<p>There is an ambiguity in many complex operations; the value returned
+by XCALC is correct, but only one of many possible solutions. For
+example, the natural logarithm of <b>-1</b> is π<b>i</b>·(1+2<i>n</i>),
+for
+any
+integer
+<i>n</i>. XCALC can only return one value, an in
+this particular example this is π<b>i</b>.
+Another example is the third root of <b>-27</b> (<font color="#008000"><b>27
+m
+Enter
+3
+r</b></font> or <font color="#008000"> <b>27 m u</b></font>). XCALC
+returns <b>-3</b> as expected, but only if you enter an <i>exact</i>
+integer as the root. If you offset <b>3</b> by just a fraction (for
+example, by taking the square of the square root of <b>3</b>), XCALC
+will no longer return <b>-3</b>, but rather <b>1.5 + i2.59</b>… This
+number raised to the third power is indeed also <b>-27</b>, but XCALC
+can no longer use the integer root formula, and ends up with one of the
+other roots. If you have an <i>integer</i> root, the result will be
+the one with the same complex angle as the radical if the root is odd
+(as above), and the root at 1/<i>n</i>'th of the angle for even roots <i>n</i>=2,
+4... For example, the square root of -1 is returned as you would expect, as i.<br>
+</p>
+<p><b>See also:</b></p>
+<ul>
+  <li><a href="Accuracy.htm">Accuracy</a></li>
+</ul>
+
+</body></html>

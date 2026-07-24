@@ -1,0 +1,33 @@
+name: Build xcalc for Windows
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.5.3'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_mingw'
+          modules: 'qtbase'
+
+      - name: Build with MinGW
+        run: |
+          call "C:\Qt\6.5.3\mingw_64\bin\qtenv2.bat"
+          qmake6 xcalc.pro
+          make release
+          dir release\
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v3
+        with:
+          name: xcalc-windows
+          path: release/xcalc.exe

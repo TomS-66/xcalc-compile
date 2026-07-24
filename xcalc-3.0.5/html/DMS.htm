@@ -1,0 +1,57 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html><head>
+
+
+
+
+
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Using DMS (degree-minute-second) format</title>
+  
+  <link rel="stylesheet" type="text/css" href="XCALC.css">
+  <script language="javascript" src="utility.js"></script>
+  <script language="javascript" src="popup.js"></script></head><body bgcolor="#ffffff" text="#000000">
+<div onclick="event.cancelBubble = true;" class="popup" id="dmsPopup">
+Or hour-minute-second (HMS). That is exactly the same.
+</div>
+<div style="text-align: right;">αβγ<br>
+</div>
+<h2><b>DMS (degree-minute-second)</b></h2>
+<p>When in Decimal mode, you can enter and do calculations with <a href="Explanation" class="popupLink" onclick="return !showPopup('dmsPopup', event);">DMS</a> numbers using
+the <i>DMS</i> key “<b>º ’ ”</b>” (keyboard <b>'</b> or <b>"</b>),
+or the <i>To DMS</i> key “<b><font face="Symbol">®</font>º ’ ”</b>”.
+For example, to enter <b>1º5’23.3”</b>, enter this:</p>
+<blockquote>
+  <p><font color="#008000"><b>1</b> <b>' 5 ' 23.3</b></font></p>
+</blockquote>
+<p>The display will show “<b>1º5’23.3</b>”. If you press <i>Enter</i>,
+the display is “completed” and shows e.g. “<b>1º05’23.30”</b>”,
+depending on your fix/float setting. To display this as decimal, use
+the <b>Round</b> button (keyboard “<b>$</b>” or “<b>R</b>”).</p>
+<p>Please note that internally, DMS numbers are equivalent to real
+numbers – the difference is simply how the display is formatted.</p>
+<p><b>Sticky DMS</b></p>
+<p>It is assumed that if you are working with DMS numbers, you most
+likely want to see results using this format. Therefore, the result
+from certain operations will retain the DMS format. These operations
+are:</p>
+<ul>
+  <li><b>+</b>, <b>-</b>, <b>*</b>, <b>/</b></li>
+  <li><b>%</b> (percent), <b>1/x</b> (reciprocal), <b>|</b> (absolute
+value), fractional part (Ctrl-F), integer part (Ctrl-I)</li>
+</ul>
+<p><b>DMS as trig results</b></p>
+<p>You can in the <a href="General.htm">Configuration Dialog</a>
+specify that inverse trigonometric functions (arcsine, arccos, arctan, polar)
+format the angular result as DMS (decimal mode only). This might be convenient at
+times.</p>
+<p>Otherwise, any sufficiently small number can be displayed as DMS by
+the <i>To DMS</i> button (Ctrl-'). A not quite arbitrary limit of
+65.535 is set as the maximum integer portion of a number allowing this.
+If the limit were higher, roundoff errors would show up more often in
+the <i>seconds</i> part of the display.</p>
+<p><b>See also:</b></p>
+<ul>
+  <li><a href="Complex.htm">Complex numbers</a></li>
+  <li><a href="Fractions.htm">Fractions</a></li>
+</ul>
+</body></html>

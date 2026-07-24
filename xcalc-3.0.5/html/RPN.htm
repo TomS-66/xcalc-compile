@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=utf-8">
+  <title>RPN Operation</title>
+  <link rel="stylesheet" type="text/css" href="XCALC.css">
+  <script language="javascript" src="utility.js"></script>
+  <script language="javascript" src="popup.js"></script>
+</head>
+<body text="#000000" bgcolor="#ffffff">
+<div onclick="event.cancelBubble = true;" class="popup" id="rpnPopup">
+RPN is short for “Reverse Polish Notation”
+</div>
+<div onclick="event.cancelBubble = true;" class="popup" id="stackPopup">
+If you want to be finicky, the RPN stack is not really a stack, since
+the RPN stack never becomes empty..!
+A quick introduction to stack operations is given <a
+ href="StackOperation.htm">here</a>.
+</div>
+<div onclick="event.cancelBubble = true;" class="popup" id="enterPopup">
+Use the “Enter” or “Return” key on the keyboard.
+</div>
+<div onclick="event.cancelBubble = true;" class="popup"
+ id="backspacePopup">
+The BackSpace key will clear the last digit if you are entering a
+number; otherwise it will clear the X register and disable the stack
+lift.
+</div>
+<div style="text-align: right;">&#945;&#946;&#947;<br>
+</div>
+<h2><b>RPN calculator</b></h2>
+<p>In short, an <a href="Explanation" class="popupLink"
+ onclick="return !showPopup('rpnPopup', event);">RPN</a> calculator
+operates using a <a href="Explanation" class="popupLink"
+ onclick="return !showPopup('stackPopup', event);">stack</a>, into
+which you push numbers for subsequent maths operations. This means you
+enter the numbers first, then you calculate.</p>
+<p><b>Example:</b> to calculate <b>“3+4”</b> using an RPN calculator,
+you enter the following:</p>
+<blockquote>
+  <p style="margin-top: 0pt; margin-bottom: 0pt;"><font color="#008000"><b>3</b></font></p>
+  <font color="#008000"> </font>
+  <p style="margin-top: 0pt; margin-bottom: 0pt;"><font color="#008000"><b>Enter</b></font></p>
+  <font color="#008000"> </font>
+  <p style="margin-top: 0pt; margin-bottom: 0pt;"><font color="#008000"><b>4</b></font></p>
+  <font color="#008000"> </font>
+  <p style="margin-top: 0pt; margin-bottom: 0pt;"><font color="#008000"><b>+</b></font></p>
+</blockquote>
+<p>The RPN calculator is virtually modeless, and you do not have to
+worry about how many nested levels of parentheses you have keyed in
+(you can't). The only mode (apart from the <a href="Modes.htm">mathematical
+modes</a>) is the Stack Lift: this is an on/off mode that tells the
+calculator whether or not the next number keyed in should overwrite the
+<a href="Registers.htm">X register</a>. Stack Lift is <i>on</i> at all
+times except when <a href="Explanation" class="popupLink"
+ onclick="return !showPopup('enterPopup', event);">Enter</a> or <a
+ href="Explanation" class="popupLink"
+ onclick="return !showPopup('backspacePopup', event);">BackSpace</a>
+was just pressed.</p>
+<p>Standard maths functions that operate on one number only are called
+without pressing enter:</p>
+<p><b>Example:</b> to calculate <b>“sin (3)”</b> on the RPN
+calculator, press:</p>
+<blockquote>
+  <p style="margin-top: 0pt; margin-bottom: 0pt;"><font color="#008000"><b>3</b></font></p>
+  <p style="margin-top: 0pt; margin-bottom: 0pt;"><font color="#008000"><b>s</b></font>
+(or click the Sin button)</p>
+</blockquote>
+<p><b>See also:</b></p>
+<ul>
+  <li><a href="LastX.htm">Last X register</a></li>
+  <li><a href="Undo.htm">Undo</a></li>
+  <li><a href="Modes.htm">Maths modes</a></li>
+  <li><a href="KeyboardOperations.htm">Keyboard interface</a></li>
+  <li><a href="MouseOperations.htm">Mouse interface</a></li>
+</ul>
+</body>
+</html>

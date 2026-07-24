@@ -1,0 +1,41 @@
+pXcalc versions, 3.0+:
+
+3.0.1, 2011.10.18: based on XCALC 2.9.4 but completely rewritten in C++
+3.0.2, 2012.02.06: Help implemented via html dubdirectory. Everything can be undone/redone. Better keyboard layout.
+3.0.3, 2012.02.19: Several small fixes: BACK works. No support for fractions in complex mode.
+        Dflt conversion from complex to real now skips imag part. If you want abs, do |x| first.
+        Root extraction (integer roots) better.
+        No more sigaction - signals never worked, and results are inf/nan as appropriate instead.
+3.0.4, 2012.03.09: Proper detection of windows and linux
+        DEG/RAD works
+        Added proper qroot function.
+        Made 64 bit work also for hex/oct 27mar12
+        Fix: display of binary numbers with wordlength: break added
+        Fixed trig/hyp functions and InvTrigasDMS (disabled for complex results)
+        Fixed: ROUND has problems. Try to round a complex number, it does strange things. Fractions now look OK.
+        Fixed: ROUND also misses strings like "1 1/2"
+        Fixed: undo/redo when ROUND is involved.
+        Added mouse wheel handler to scroll stack 14apr12
+        Rudimentary memory registers implemented, with indicator showing value
+        Abs works, dflt conversion to binary is real value only.
+        Fixes wrt word sizes, shift etc.
+        Fixed: problems with wordlength/signedness/float conversion...
+        Round now works better on input - removes frac and DMS as proposed.
+        Added explicit copy constructor and assignment operator for Register/Inttype. Seems to work OK.
+        TODO: linux mail only works if thunderbird is installed
+        FIXED: any register should be converted to real if word length is too small for int. Doesn't happen with alt-w.. (does now!)
+        Handled some stupid C++ 'const' problems
+        Looks like problems related to word sizes are solved!
+        FIXED: round won't work if numbers are displayed with (int) etc.
+        Added proper handling of fractions as Inkey!
+        Help pages updated.
+        Added inc/dec wordlength in real modes
+3.0.5: 2012.06.10: Attempting a more or less complete rewrite to get SL ok...
+        FIXED: Looks like undo/redo is ok now! Just moved SaveUndo FIRST in Inkey, before lift()
+        Now, how does work with complex numbers? Seems to work perfectly!
+        TODO: need complex interactive indication (|) for backspace to work
+        Fixed: can't redo inkey! (as in 1/3 Anything!)
+        FIXED: looks like even ROUND works now (with redo!)
+        TODO: ROUND should short circuit following INKEY, also in undo/redo
+        TODO: 1/3 enter ROUND ROUND - cannot be redone
+        TODO: xcalc won't treat numbers as ints unless they fit into bin WS.

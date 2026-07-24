@@ -1,0 +1,73 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html><head>
+
+
+
+
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Computational Accuracy</title>
+  
+  <link rel="stylesheet" type="text/css" href="XCALC.css">
+  <script language="javascript" src="utility.js"></script>
+  <script language="javascript" src="popup.js"></script></head><body bgcolor="#ffffff" text="#000000">
+<div style="top: 16px; height: 25px;" onclick="event.cancelBubble = true;" class="popup" id="twoBill"> 2
+billion multiplications? No. There are faster ways.<br>
+<br>
+</div>
+<div style="text-align: right;">αβγ<br>
+</div>
+<h2><b>Accuracy</b></h2>
+<p>XCALC works (for floating-point modes) internally with <b>long
+double</b> numbers (on x86 hardware that is 64 bit mantissa plus 15 bit biased exponent, other platforms will vary). This
+accounts for an <i>approximate</i> accuracy of 19 decimal digits. This
+is, however, not precise, and certain operations may generate errors
+that accumulate to be larger than this.</p>
+<p>For the integer modes (hex, octal, binary) you can set the word
+length to 8, 16, 32 or 64 bits. For most operations, this will
+represent a signed integer of the specified size, but for the shift and
+rotate operations shl, shr, rotr, rotl the value is considered unsigned,<br>
+</p>
+<p>I will give some examples to
+show what to expect (on x86 hardware):</p>
+
+<p><b>Example 1:</b></p>
+<blockquote>
+  <p>Calculate the square of the square root of seven, minus 7:</p>
+  <p>Press:<b> <font color="#008000">7 q Q 7 -</font></b></p>
+  <p>The result is <i>not</i> zero, but approximately -4.34e-19. This
+is because the square root is not calculated exactly.</p>
+</blockquote>
+<p><b>Example 2:</b></p>
+<blockquote>
+  <p>Calculate minus 1 to the power of two billion, using 32 bit binary wordlength:</p>
+  <p>Press:<b> <font color="#008000">1 m Enter 2e9 ^</font></b></p>
+  <p id="id1">The result is 1, as it should. When the power is a
+positive or negative <i>integer</i>
+that can be represented using the current wordlength
+(-2,147,483,648…2,147,483,647 in case of 32 bits), the power is
+calculated using
+repeated <a href="Explanation" class="popupLink" onclick="return !showPopup('twoBill', event);">multiplications</a>.
+However:</p>
+</blockquote>
+<p><b>Example 3:</b></p>
+<blockquote>
+  <p>Calculate minus 1 to the power of three billion, using 32 bit binary wordlength:</p>
+  <p>Press:<b> <font color="#008000">1 m Enter 3e9 ^</font></b></p>
+  <p>The result is complex. Here, the power must be represented as a
+real number, and logarithms are used for the power function, resulting
+in a small “leakage” into the imaginary part.</p>
+</blockquote>
+<p><b>Example 4 (not related to complex numbers):</b></p>
+<blockquote>
+  <p>Calculate 2.62 – 2 – 0.62:</p>
+  <p>Press:<b> <font color="#008000">2.62 Enter 2 – 0.62 –</font></b></p>
+  <p>The result is not zero, but about -1.08e-19. This is expected and
+normal, since XCALC does not use BCD numbers. (If you have a Python
+interpreter installed, you can try the same exercise and get similar
+[but slightly worse] results. This is not my fault, but the
+processor’s…)</p>
+</blockquote>
+<p><b>See also:</b></p>
+<ul>
+  <li><a href="Complex.htm">Complex numbers</a></li>
+</ul>
+</body></html>

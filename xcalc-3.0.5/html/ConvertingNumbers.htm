@@ -1,0 +1,35 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html><head>
+
+
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Converting numbers between modes</title>
+  
+  <link rel="stylesheet" type="text/css" href="XCALC.css"></head><body bgcolor="#ffffff" text="#000000">
+<div style="text-align: right;">αβγ<br>
+</div>
+<h2>Converting numbers between modes</h2>
+<p>When you switch between modes, or recall a number from a memory
+register or the clipboard (paste), conversions are applied following
+these rules:</p>
+<ul>
+  <li>When switching away from the Complex mode, the imaginary part of
+all stack registers are lost.</li>
+  <li>When switching into a binary mode, the fractional part of all
+stack registers are lost.</li>
+  <li>When selecting a smaller word size in binary modes (to 32, 16 or 8
+bits), the most significant bits of all stack registers are lost.</li>
+  <li>The binary numbers are always treated as <i>signed 2’s complement</i>,
+so for example the value (hex) <b>FF</b> will translate into <b>-1</b>
+when 8-bit word size is selected, otherwise <b>255</b>.</li>
+  <li>When you switch into one of the binary modes (from Decimal or
+Complex), the values of all stack registers are chopped to fit into the
+current word size, with no warning given.</li>
+  
+  <li>When a memory register containing a Decimal, Complex or
+Fractional number is recalled to the <i>X</i> register in a binary
+mode, the value&nbsp; is likewise chopped to fit the current word size. The fractional and imaginary
+parts are lost.</li>
+
+  <li>When a memory register containing a binary number is recalled to
+the <i>X</i> register in a binary mode, the high-order bits are lost
+if the current word size is too small.</li></ul></body></html>

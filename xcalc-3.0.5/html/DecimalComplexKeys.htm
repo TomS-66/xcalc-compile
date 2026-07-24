@@ -1,0 +1,245 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html><head>
+
+
+
+
+
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Decimal/Complex mode Keys</title>
+  
+  <link rel="stylesheet" type="text/css" href="XCALC.css">
+  <script language="javascript" src="utility.js"></script>
+  <script language="javascript" src="popup.js"></script></head><body bgcolor="#ffffff" text="#000000">
+<div onclick="event.cancelBubble = true;" class="popup" id="cartesianpolarPopup">
+<p>These conversion operations behave differently in <i>decimal</i>
+and <i>complex</i> modes:</p>
+<p>In <i>decimal</i> mode, the cartesian coordinate pair (<i>X</i>:<i>Y</i>)
+and the polar coordinate pair (<i>r</i>;<i>f</i>) are stored in the
+register pair (<i>X</i>:<i>Y</i>).</p>
+<p>In <i>complex</i> mode, the real and imaginary parts of register <i>X</i>
+only are used.</p>
+</div>
+<div onclick="event.cancelBubble = true;" class="popup" id="dmsPopup">
+You may more often see roundoff errors when a number is displayed as
+DMS.
+</div>
+<div style="text-align: right;">αβγ<br>
+</div>
+<h2>Decimal/Complex mode keys</h2>
+<p style="margin-top: 0pt; margin-bottom: 0pt;" align="right"><b>
+<a href="GeneralKeys.htm">General keys</a> </b> </p>
+<p style="margin-top: 0pt; margin-bottom: 0pt;" align="right"><b><a href="BinaryKeys.htm">Hexadecimal/Octal/Binary keys</a> </b> </p>
+<table id="table1" border="1" width="100%">
+  <tbody>
+    <tr>
+      <td><b><i>Key</i></b></td>
+      <td width="688"><b><i>Explanation</i></b></td>
+    </tr>
+    <tr>
+      <td>e</td>
+      <td width="688">Enter <b>e</b>xponent</td>
+    </tr>
+    <tr>
+      <td>p</td>
+      <td width="688"><b>p</b>i (<font face="Symbol">p</font>)</td>
+    </tr>
+    <tr>
+      <td>s c t</td>
+      <td width="688"><b>S</b>ine, <b>C</b>osine and <b>T</b>angent,
+respectively</td>
+    </tr>
+    <tr>
+      <td>S C T</td>
+      <td width="688">inverse <span style="font-weight: bold;">S</span>ine, inverse <span style="font-weight: bold;">C</span>osine and inverse <span style="font-weight: bold;">T</span>angent, respectively<br>
+</td>
+    </tr>
+    <tr>
+      <td>meta-alt- s,c,t<br>
+</td>
+      <td width="688">Hyperbolic <b>S</b>ine, <b>C</b>osine and <b>T</b>angent,
+respectively</td>
+    </tr>
+    <tr>
+      <td>meta- S,C,T<br>
+</td>
+      <td width="688">Inverse hyperbolic <b>S</b>ine, <b>C</b>osine and <b>T</b>angent,
+respectively</td>
+    </tr>
+    <tr>
+      <td>f, &lt;space&gt;</td>
+      <td width="688">Enter <b>f</b>raction (Decimal only)</td>
+    </tr>
+    <tr>
+      <td>' " (quote)</td>
+      <td width="688">Enter degree-minute-second (DMS) number (Decimal
+only)</td>
+    </tr>
+    <tr>
+      <td>F</td>
+      <td width="688">Toggle clean fraction display (Decimal only)<br>
+</td>
+    </tr>
+    <tr>
+      <td>q Q</td>
+      <td width="688">S<b>q</b>uare root and s<b>q</b>uare, respectively</td>
+    </tr>
+    <tr>
+      <td>u U</td>
+      <td width="688">C<b>u</b>be root and c<b>u</b>be, respectively</td>
+    </tr>
+    <tr>
+      <td>L E</td>
+      <td width="688">Natural logarithm (<b>l</b>n) and exponential (<b>e</b>^x)</td>
+    </tr>
+    <tr>
+      <td>G N</td>
+      <td width="688">Base-10 logarithm (lo<b>g</b>) and antilog (te<b>n</b>,
+10^x)</td>
+    </tr>
+    <tr>
+      <td>^ o</td>
+      <td width="688">P<b>o</b>wer (y^x)</td>
+    </tr>
+    <tr>
+      <td>&amp; r</td>
+      <td width="688"><b>R</b>oot (y^1/x)</td>
+    </tr>
+    <tr>
+      <td><b>|</b></td>
+      <td width="688">Absolute value (|x|)</td>
+    </tr>
+    <tr>
+      <td><b>!</b></td>
+      <td width="688">Factorial (x!) of the <i>integer real</i> part
+of <i>X</i></td>
+    </tr>
+    <tr>
+      <td><b>?</b></td>
+      <td width="688">Random number generator (uniform distribution, 0≤<i>x</i>&lt;1)</td>
+    </tr>
+    <tr>
+      <td>%</td>
+      <td width="688">Percent (<i><a href="Registers.htm">X</a></i> = <i>Y</i>
+*(real)<i>X</i>/100, <i> <a href="Registers.htm">Y</a></i> unchanged)</td>
+    </tr>
+    <tr>
+      <td>\</td>
+      <td width="688">Reciprocal (1/x)</td>
+    </tr>
+    <tr>
+      <td>i j</td>
+      <td width="688">Combine the real parts of <a href="Registers.htm"><i>Y</i></a>
+and <a href="Registers.htm"><i>X</i></a> into <i>Y</i> + i<i>X</i>.
+Switch to complex mode if in decimal mode</td>
+    </tr>
+    <tr>
+      <td>I J</td>
+      <td width="688">Split the real and imaginary parts of the <i>x</i>
+register into the <i>Y</i> and <i>X</i> registers, respectively
+(Complex only)</td>
+    </tr>
+    
+    
+    
+    
+    
+    
+    <tr>
+      <td>M D</td>
+      <td width="688"><b>M</b>odulo and integer <b>d</b>ivision,
+respectively</td>
+    </tr>
+    <tr>
+      <td>Ctrl-'</td>
+      <td width="688">Display <i>x</i> register as <b>D</b>egree-minute-second
+      <a href="Explanation" class="popupLink" onclick="return !showPopup('dmsPopup', event);">(note)</a></td>
+    </tr>
+    <tr>
+      <td>Ctrl-I</td>
+      <td width="688">Get <b>I</b>nteger portion of <i>X</i> register</td>
+    </tr>
+    <tr>
+      <td>Ctrl-F</td>
+      <td width="688">Get <b>F</b>ractional portion of <i>X</i>
+register</td>
+    </tr>
+    <tr>
+      <td>$ R</td>
+      <td width="688">Convert fraction to decimal, remove DMS formatting or round the <i>X</i> register to displayed digits</td>
+    </tr>
+    <tr>
+      <td>Alt-G</td>
+      <td width="688">Set De<b>g</b>ree mode (Decimal only)</td>
+    </tr>
+    <tr>
+      <td>Alt-R</td>
+      <td width="688">Set <b>R</b>adian mode (Decimal only)</td>
+    </tr>
+    <tr>
+      <td>Alt-0 - Alt-9</td>
+      <td width="688">Set FIX mode to zero through nine decimals<br>
+</td>
+    </tr>
+    <tr>
+      <td>Alt-F</td>
+      <td width="688">Set <b>F</b>LOAT mode (varying number of
+decimals)</td>
+    </tr>
+    <tr>
+      <td>Alt-I</td>
+      <td width="688">Set normal (F<b>i</b>x/Float) mode</td>
+    </tr>
+    <tr>
+      <td>Alt-S</td>
+      <td width="688">Set <b>S</b>cientific mode</td>
+    </tr>
+    <tr>
+      <td>Alt-E</td>
+      <td width="688">Set <b>E</b>ngineering mode</td>
+    </tr>
+    <tr>
+      <td>
+←, →</td>
+      <td width="688">Set decimal FIX</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">Alt-w,Alt-Shift-W<br>
+      </td>
+      <td style="vertical-align: top;">Decrement/increment integer <span style="font-weight: bold;">w</span>ord size<br>
+      </td>
+    </tr>
+<tr>
+      <td>' (single quote)</td>
+      <td width="688">Complex conjugate (Complex only)</td>
+    </tr>
+    <tr>
+      <td>" (double quote)</td>
+      <td width="688">Swap real and imaginary part (Complex only)</td>
+    </tr>
+    <tr>
+      <td>[comma]<br>
+</td>
+      <td width="688">Finish entering real part, start entering
+imaginary part of number<a href="General.htm"></a></td>
+    </tr><tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">:</span><br>
+      </td>
+      <td style="vertical-align: top;">Cartesian coordinates <a href="Explanation" class="popupLink" onclick="return !showPopup('cartesianpolarPopup', event);">(note)</a>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">;</span><br>
+      </td>
+      <td style="vertical-align: top;">Polar coordinates <a href="Explanation" class="popupLink" onclick="return !showPopup('cartesianpolarPopup', event);">(note)</a></td>
+    </tr>
+
+  </tbody>
+</table>
+<p><b>See also:</b></p>
+<ul>
+  <li><a href="GeneralKeys.htm">General keys</a> </li>
+  <li><a href="BinaryKeys.htm">Hexadecimal/Octal/Binary keys</a> </li>
+  <li><a href="KeyboardOperations.htm">Keyboard operations</a></li>
+  <li><a href="MouseOperations.htm">Mouse operations</a></li>
+</ul>
+</body></html>

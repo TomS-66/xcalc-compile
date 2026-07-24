@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html><head>
+
+
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Setting the Maths modes</title>
+  
+  <link rel="stylesheet" type="text/css" href="XCALC.css">
+  <script language="javascript" src="utility.js"></script>
+  <script language="javascript" src="popup.js"></script></head><body>
+<div onclick="event.cancelBubble = true;" class="popup" id="decimalPopup">
+Normal mode, radix 10.
+This mode also includes fractions, like “1/3”.
+Conversion between fractional and decimal numbers is automatic.
+Further, you can input or display a number using degrees, minutes and
+seconds.
+</div>
+<div onclick="event.cancelBubble = true;" class="popup" id="complexPopup">
+Real and Imaginary parts of the numbers, radix 10.
+</div>
+<div onclick="event.cancelBubble = true;" class="popup" id="hexadecimalPopup">
+Radix 16, digits 0,1,2,3,4,5,6,7,8,9,a,b,c,d,e and f. Treated as signed
+numbers.
+</div>
+<div onclick="event.cancelBubble = true;" class="popup" id="octalPopup">
+Radix 8, digits 0,1,2,3,4,5,6 and 7. Treated as signed numbers.
+</div>
+<div onclick="event.cancelBubble = true;" class="popup" id="binaryPopup">
+Radix 2, digits 0 and 1. Treated as signed numbers.
+</div>
+<div onclick="event.cancelBubble = true;" class="popup" id="fixfloatPopup">
+Examples of “float” numbers:
+<ul>
+  <li>-3.878455</li>
+  <li>456.6</li>
+  <li>50</li>
+</ul>
+The same numbers with “fix” 2 decimals:
+<ul>
+  <li>-3.88</li>
+  <li>456.60</li>
+  <li>50.00</li>
+</ul>
+</div>
+<div onclick="event.cancelBubble = true;" class="popup" id="fixPopup">
+Fix: No forced exponent, e.g., <b>12345.6</b> (or <b>12,345.6</b>).
+</div>
+<div onclick="event.cancelBubble = true;" class="popup" id="scientificPopup">
+Scientific: Always a mantissa 0 or 1 <font face="Symbol">£</font> <i>m</i>
+&lt; 10, and an exponent, e.g., <b>1.23456 e+004</b>.
+</div>
+<div onclick="event.cancelBubble = true;" class="popup" id="engineeringPopup">
+Engineering: Always an exponent of 10, which is always divisible by 3,
+e.g., <b>12.3456 e+003</b>.
+</div>
+<div onclick="event.cancelBubble = true;" class="popup" id="degreePopup">
+There are 360 degrees in a full circle.
+</div>
+<div onclick="event.cancelBubble = true;" class="popup" id="radianPopup">
+There are 2 <font face="Symbol">p</font> radians in a full circle.
+</div>
+<div style="text-align: right;">αβγ<br>
+</div>
+<h2><b>Modes</b></h2>
+<p>There are 5 modes of operation for XCALC, divided into two distinct
+groups, floating point and signed integers:</p>
+<p><b>Floating point:</b></p>
+<ul>
+  <li><a href="Explanation" class="popupLink" onclick="return !showPopup('decimalPopup', event);">Decimal</a></li>
+  <li><a href="Explanation" class="popupLink" onclick="return !showPopup('complexPopup', event);">Complex</a></li>
+</ul>
+<p><b>Integer:</b></p>
+<ul>
+  <li><a href="Explanation" class="popupLink" onclick="return !showPopup('hexadecimalPopup', event);">Hexadecimal</a></li>
+  <li><a href="Explanation" class="popupLink" onclick="return !showPopup('octalPopup', event);">Octal</a></li>
+  <li><a href="Explanation" class="popupLink" onclick="return !showPopup('binaryPopup', event);">Binary</a></li>
+</ul>
+<p>For the <b>Floating point</b> modes, various settings will be
+available:</p>
+<p><b>Fix/Float:</b></p>
+<p>Using the <a href="MouseOperations.htm">mouse</a> or the <a href="KeyboardOperations.htm">keyboard</a>,
+you can select the display of numbers using a fixed amount of digits
+behind the decimal point
+(<a href="Explanation" class="popupLink" onclick="return !showPopup('fixfloatPopup', event);">fixed</a>) or a
+variable amount
+(<a href="Explanation" class="popupLink" onclick="return !showPopup('fixfloatPopup', event);">float</a>).
+You can also choose between the
+<a href="Explanation" class="popupLink" onclick="return !showPopup('fixPopup', event);">Fix</a>,
+<a href="Explanation" class="popupLink" onclick="return !showPopup('scientificPopup', event);">Scientific</a>
+and
+<a href="Explanation" class="popupLink" onclick="return !showPopup('engineeringPopup', event);">Engineering</a>
+modes.</p>
+<p><b>Trigonometric settings:</b></p>
+<p>For Decimal (not Complex) operation, you can choose between the <a href="Explanation" class="popupLink" onclick="return !showPopup('degreePopup', event);">Degree</a> or <a href="Explanation" class="popupLink" onclick="return !showPopup('radianPopup', event);">Radian</a> angular
+measurements. The degree measure does not make much sense for complex
+numbers,
+so the only setting available for complex operation is the Radian
+measurement. (See <a href="Complex.htm">Complex Operation</a> for an
+explanation.) If you switch back to Decimal mode, your original setting
+is restored.</p>
+
+<p>For the <b>Integer</b> modes you can choose the word size:</p>
+<ul>
+  <li><b>64</b> bit: number range rather large<br>
+</li>
+  <li><b>32</b> bit: number range -2 147 483 648 to 2 147 483 647</li>
+
+  <li><b>16</b> bit: number range -32 768 to 32 767</li>
+  <li><b>8</b> bit: number range -128 to 127</li>
+</ul>
+<p><b>See also:</b></p>
+<ul>
+  <li><a href="ConvertingNumbers.htm">Converting numbers between modes</a></li>
+</ul>
+</body></html>
